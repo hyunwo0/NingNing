@@ -6,20 +6,27 @@
 // 사용자가 "오늘의 운세 보기" 버튼을 눌러 /input으로 이동하도록 유도합니다.
 //
 // [구성]
-// 1) 히어로 영역: 서비스명 + 한 줄 소개 + CTA 버튼
-// 2) 특징 소개: 3가지 핵심 가치
-// 3) 사용 흐름 안내: 3단계 프로세스
-// 4) 하단 CTA: 한 번 더 유도
+// 1) 상단 네비게이션: 로그인/마이페이지 링크
+// 2) 히어로 영역: 서비스명 + 한 줄 소개 + CTA 버튼
+// 3) 특징 소개: 3가지 핵심 가치
+// 4) 사용 흐름 안내: 3단계 프로세스
+// 5) 하단 CTA: 한 번 더 유도
 
 import Link from 'next/link';
+import AuthNavLink from './AuthNavLink';
 
 export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6">
 
+        {/* ── 상단 네비게이션 — 로그인/마이페이지 링크 ── */}
+        <nav className="flex justify-end pt-4">
+          <AuthNavLink />
+        </nav>
+
         {/* ── 히어로 영역 ── */}
-        <section className="flex flex-col items-center text-center pt-20 pb-12 gap-6">
+        <section className="flex flex-col items-center text-center pt-12 pb-12 gap-6">
           {/* 로고/서비스명 */}
           <div className="flex flex-col items-center gap-2">
             <div className="size-16 rounded-2xl bg-foreground flex items-center justify-center">

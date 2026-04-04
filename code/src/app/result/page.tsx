@@ -88,6 +88,9 @@ export default function ResultPage() {
   // 공유 모달 표시 여부
   const [showShareModal, setShowShareModal] = useState(false);
 
+  // 결과 저장 상태
+  const [isSaved, setIsSaved] = useState(false);
+
   // AI 해석 API 호출 (재시도 가능하도록 별도 함수)
   const fetchInterpretation = useCallback(async (saju: SajuResponse, gender: string) => {
     setAiError(false);
@@ -182,6 +185,53 @@ export default function ResultPage() {
     fetchResults();
   }, [router, fetchInterpretation]);
 
+  // ── 저장 여부 확인 (오늘 날짜 기준) ──
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('savedResults');
+      if (raw) {
+        const saved = JSON.parse(raw);
+        const today = new Date().toLocaleDateString('ko-KR');
+        const alreadySaved = saved.some((r: { date: string }) => r.date === today);
+        setIsSaved(alreadySaved);
+      }
+    } catch {
+      // localStorage 접근 실패 시 무시
+    }
+  }, []);
+
+  // ── 결과 저장 핸들러 ──
+  const handleSaveResult = () => {
+    if (!interpretation || !sajuData) return;
+
+    const today = new Date().toLocaleDateString('ko-KR');
+    const newResult = {
+      id: `${Date.now()}`,
+      date: today,
+      dailySummary: interpretation.dailySummary,
+      keywords: interpretation.dailyKeywords,
+      scores: {
+        love: sajuData.daily.reading.love.score,
+        work: sajuData.daily.reading.work.score,
+        money: sajuData.daily.reading.money.score,
+      },
+    };
+
+    try {
+      const raw = localStorage.getItem('savedResults');
+      const existing = raw ? JSON.parse(raw) : [];
+
+      // 같은 날짜의 결과가 이미 있으면 교체, 없으면 추가
+      const filtered = existing.filter((r: { date: string }) => r.date !== today);
+      filtered.push(newResult);
+
+      localStorage.setItem('savedResults', JSON.stringify(filtered));
+      setIsSaved(true);
+    } catch {
+      // localStorage 저장 실패 시 무시
+    }
+  };
+
   // ── 로딩 화면 (사주 계산 중에만 표시) ──
   if (step === 'loading-saju') {
     return (
@@ -220,11 +270,38 @@ export default function ResultPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6 py-8 gap-6">
 
-        {/* ── 헤더 영역: 홈으로 링크 ── */}
-        <div className="flex items-center">
+        {/* ── 헤더 영역: 홈으로 링크 + 저장 버튼 ── */}
+        <div className="flex items-center justify-between">
           <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
             홈으로
           </Link>
+
+          {/* 결과 저장 버튼 (AI 해석 완료 시만 표시) */}
+          {interpretation && (
+            <button
+              onClick={handleSaveResult}
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={isSaved ? '저장됨' : '결과 저장'}
+            >
+              {isSaved ? (
+                <>
+                  {/* 채워진 북마크 아이콘 */}
+                  <svg className="size-5 text-foreground" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <span className="text-foreground font-medium">저장됨</span>
+                </>
+              ) : (
+                <>
+                  {/* 빈 북마크 아이콘 */}
+                  <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                  <span>결과 저장</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* ── AI 해석 실패 시 재시도 배너 ── */}
