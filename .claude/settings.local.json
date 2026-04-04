@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python3 -c ':*)",
+      "Bash(python -c ':*)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-pnpm --no-turbopack)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(mkdir:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx vitest:*)",
+      "Bash(bun:*)",
+      "Bash(chmod 600:*)",
+      "Skill(telegram:configure)",
+      "Bash(node:*)",
+      "mcp__plugin_telegram_telegram__reply",
+      "Bash(pnpm build:*)",
+      "Bash(ls -la /c/Users/indol/OneDrive/Desktop/Github/NingNing/code/.env*)",
+      "Bash(winget install:*)",
+      "Bash(export PATH=\"/c/Program Files/GitHub CLI:$PATH\")",
+      "Bash(gh auth:*)",
+      "Bash(where:*)",
+      "Bash(cmd.exe:*)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/Users/indol/AppData/**)",
+      "Bash(/c/Program Files/GitHub CLI/gh.exe auth:*)",
+      "Bash(\"/c/Program Files/GitHub CLI/gh.exe\" repo create NingNing --public --description \"사주명리학 기반 AI 오늘의 운세 서비스\" --source . --remote origin)",
+      "Bash(git status:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(/c/Program Files/GitHub CLI/gh.exe api:*)",
+      "Bash(git config:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(pnpm exec:*)"
+    ]
+  },
+  "enabledPlugins": {
+    "telegram@claude-plugins-official": true
+  }
+}

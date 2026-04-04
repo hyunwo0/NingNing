@@ -107,10 +107,12 @@ export async function POST(request: Request) {
     // 4) JSON 파싱
     const report = parseJSONResponse<ReportResult>(content);
 
-    // 5) 응답 반환
+    // 5) 응답 반환 (AI 응답은 브라우저 캐시 방지)
     return NextResponse.json({
       report,
       usage: aiResponse.usage,
+    }, {
+      headers: { 'Cache-Control': 'no-store' },
     });
   } catch (error) {
     console.error('[/api/report] 심층 리포트 생성 오류:', error);

@@ -113,10 +113,12 @@ export async function POST(request: Request) {
       }
     }
 
-    // 4) 응답 반환
+    // 4) 응답 반환 (AI 응답은 브라우저 캐시 방지)
     return NextResponse.json({
       answer: content,
       usage: aiResponse.usage,
+    }, {
+      headers: { 'Cache-Control': 'no-store' },
     });
   } catch (error) {
     console.error('[/api/question] 추가질문 오류:', error);

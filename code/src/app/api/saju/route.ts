@@ -20,6 +20,35 @@ import type { SajuInput } from '@/lib/saju/types';
 // 요청 바디 크기 제한 (10KB)
 const MAX_BODY_SIZE = 10 * 1024;
 
+// ──────────────────────────────────────────
+// 인메모리 캐시 (동일 입력 + 같은 날짜 → 동일 결과)
+// ──────────────────────────────────────────
+const CACHE_TTL = 24 * 60 * 60 * 1000; // 24시간 (밀리초)
+const CACHE_MAX_SIZE = 1000; // 최대 캐시 항목 수
+
+interface CacheEntry {
+  data: unknown;
+  timestamp: number;
+}
+
+const sajuCache = new Map<string, CacheEntry>();
+
+// 만료된 캐시 항목 제거
+function evictExpiredEntries() {
+  const now = Date.now();
+  for (const [key, entry] of sajuCache) {
+    if (now - entry.timestamp > CACHE_TTL) {
+      sajuCache.delete(key);
+    }
+  }
+}
+
+// 캐시 키 생성 (입력 데이터 + 오늘 날짜)
+function buildCacheKey(input: SajuInput): string {
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  return JSON.stringify({ ...input, _date: today });
+}
+
 export async function POST(request: Request) {
   try {
     // 요청 바디 크기 검증
@@ -58,14 +87,23 @@ export async function POST(request: Request) {
       );
     }
 
+    // 캐시 확인 — 동일 입력 + 같은 날짜면 캐시된 결과 반환
+    const cacheKey = buildCacheKey(body);
+    const cached = sajuCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      return NextResponse.json(cached.data, {
+        headers: { 'Cache-Control': 'private, max-age=86400' },
+      });
+    }
+
     // 사주 분석 수행 (사주 팔자 + 오행 + 일간 강약)
     const analysis = analyzeSaju(body);
 
     // 오늘의 운세 분석 (일진 기반 3축 점수)
     const daily = analyzeDailyFortune(analysis);
 
-    // 응답 반환
-    return NextResponse.json({
+    // 응답 데이터 구성
+    const responseData = {
       // 사주 분석 결과
       fourPillars: analysis.fourPillars,
       fiveElements: analysis.fiveElements,
@@ -85,6 +123,24 @@ export async function POST(request: Request) {
         fourPillars: fourPillarsToString(analysis.fourPillars),
         fiveElements: fiveElementsToString(analysis.fiveElements),
       },
+    };
+
+    // 캐시에 저장 (최대 크기 초과 시 만료 항목 정리 후 가장 오래된 항목 제거)
+    if (sajuCache.size >= CACHE_MAX_SIZE) {
+      evictExpiredEntries();
+      // 정리 후에도 가득 차 있으면 가장 오래된 항목 제거
+      if (sajuCache.size >= CACHE_MAX_SIZE) {
+        const oldestKey = sajuCache.keys().next().value;
+        if (oldestKey !== undefined) {
+          sajuCache.delete(oldestKey);
+        }
+      }
+    }
+    sajuCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
+
+    // 응답 반환
+    return NextResponse.json(responseData, {
+      headers: { 'Cache-Control': 'private, max-age=86400' },
     });
   } catch (error) {
     console.error('[/api/saju] 계산 오류:', error);

@@ -24,6 +24,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import ShareModal from '@/components/share/ShareModal';
+import type { ShareCardData } from '@/components/share/ShareCard';
 import type { FourPillars, FiveElementProfile, DailyRelation, DayMasterStrength, HeavenlyStem, FiveElement } from '@/lib/saju/types';
 
 // ──────────────────────────────────────────
@@ -59,8 +61,8 @@ interface InterpretResponse {
   };
 }
 
-// 로딩 단계 (사용자에게 진행 상황을 보여주기 위해)
-type LoadingStep = 'loading-saju' | 'loading-ai' | 'done' | 'error';
+// 로딩 단계 (사주 계산 완료 시 바로 'done'으로 전환, AI 로딩은 aiLoading 상태로 관리)
+type LoadingStep = 'loading-saju' | 'done' | 'error';
 
 // ──────────────────────────────────────────
 // 메인 컴포넌트
@@ -80,9 +82,16 @@ export default function ResultPage() {
   const [aiError, setAiError] = useState(false);
   const [aiRetrying, setAiRetrying] = useState(false);
 
+  // AI 해석 로딩 중 여부
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // 공유 모달 표시 여부
+  const [showShareModal, setShowShareModal] = useState(false);
+
   // AI 해석 API 호출 (재시도 가능하도록 별도 함수)
   const fetchInterpretation = useCallback(async (saju: SajuResponse, gender: string) => {
     setAiError(false);
+    setAiLoading(true);
     try {
       const interpretRes = await fetch('/api/interpret', {
         method: 'POST',
@@ -111,6 +120,8 @@ export default function ResultPage() {
     } catch {
       console.warn('AI 해석 네트워크 오류');
       setAiError(true);
+    } finally {
+      setAiLoading(false);
     }
   }, []);
 
@@ -158,10 +169,9 @@ export default function ResultPage() {
         // 사주 결과를 sessionStorage에 저장 (추가질문 페이지에서 사용)
         sessionStorage.setItem('sajuResult', JSON.stringify(saju));
 
-        // 3) AI 해석 API 호출
-        setStep('loading-ai');
-        await fetchInterpretation(saju, input.gender);
+        // 3) 사주 결과가 나오면 바로 화면 표시, AI 해석은 백그라운드로 진행
         setStep('done');
+        fetchInterpretation(saju, input.gender);
       } catch (error) {
         console.error('결과 로딩 오류:', error);
         setErrorMessage(error instanceof Error ? error.message : '알 수 없는 오류');
@@ -172,14 +182,14 @@ export default function ResultPage() {
     fetchResults();
   }, [router, fetchInterpretation]);
 
-  // ── 로딩 화면 ──
-  if (step === 'loading-saju' || step === 'loading-ai') {
+  // ── 로딩 화면 (사주 계산 중에만 표시) ──
+  if (step === 'loading-saju') {
     return (
       <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black min-h-screen">
         <div className="flex flex-col items-center gap-4">
           <LoadingSpinner />
           <p className="text-sm text-muted-foreground animate-pulse">
-            {step === 'loading-saju' ? '사주를 분석하고 있습니다...' : 'AI가 오늘의 운세를 해석하고 있습니다...'}
+            사주를 분석하고 있습니다...
           </p>
         </div>
       </div>
@@ -294,7 +304,7 @@ export default function ResultPage() {
         </section>
 
         {/* ── AI 한 줄 총평 ── */}
-        {interpretation && (
+        {interpretation ? (
           <section className="rounded-2xl bg-foreground text-background p-5">
             <p className="text-lg font-semibold leading-relaxed">
               {interpretation.dailySummary}
@@ -307,7 +317,17 @@ export default function ResultPage() {
               ))}
             </div>
           </section>
-        )}
+        ) : aiLoading ? (
+          <section className="rounded-2xl bg-foreground text-background p-5">
+            <Skeleton className="h-6 w-3/4 bg-background/20" />
+            <Skeleton className="h-6 w-1/2 bg-background/20 mt-2" />
+            <div className="flex gap-2 mt-3">
+              <Skeleton className="h-5 w-14 rounded-full bg-background/20" />
+              <Skeleton className="h-5 w-14 rounded-full bg-background/20" />
+              <Skeleton className="h-5 w-14 rounded-full bg-background/20" />
+            </div>
+          </section>
+        ) : null}
 
         {/* ── 3축 운세 카드 ── */}
         <section className="flex flex-col gap-3">
@@ -319,6 +339,7 @@ export default function ResultPage() {
             engineSummary={daily.reading.love.summary}
             aiInterpretation={interpretation?.loveReading.interpretation}
             aiAdvice={interpretation?.loveReading.advice}
+            aiLoading={aiLoading}
           />
           <ReadingCard
             axis="일/직장"
@@ -328,6 +349,7 @@ export default function ResultPage() {
             engineSummary={daily.reading.work.summary}
             aiInterpretation={interpretation?.workReading.interpretation}
             aiAdvice={interpretation?.workReading.advice}
+            aiLoading={aiLoading}
           />
           <ReadingCard
             axis="재물"
@@ -337,11 +359,12 @@ export default function ResultPage() {
             engineSummary={daily.reading.money.summary}
             aiInterpretation={interpretation?.moneyReading.interpretation}
             aiAdvice={interpretation?.moneyReading.advice}
+            aiLoading={aiLoading}
           />
         </section>
 
         {/* ── 오늘의 행동 조언 ── */}
-        {interpretation && (
+        {interpretation ? (
           <section className="rounded-2xl bg-background border border-border p-5 space-y-3">
             <div>
               <h3 className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">오늘 하면 좋은 것</h3>
@@ -352,10 +375,23 @@ export default function ResultPage() {
               <p className="text-sm text-foreground">{interpretation.avoidToday}</p>
             </div>
           </section>
-        )}
+        ) : aiLoading ? (
+          <section className="rounded-2xl bg-background border border-border p-5 space-y-3">
+            <div>
+              <h3 className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">오늘 하면 좋은 것</h3>
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-2/3 mt-1" />
+            </div>
+            <div className="border-t border-border pt-3">
+              <h3 className="text-xs font-medium text-red-500 dark:text-red-400 mb-1">오늘 피하면 좋은 것</h3>
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-2/3 mt-1" />
+            </div>
+          </section>
+        ) : null}
 
         {/* ── 행운 단서 ── */}
-        {interpretation?.luckyHints && interpretation.luckyHints.length > 0 && (
+        {interpretation?.luckyHints && interpretation.luckyHints.length > 0 ? (
           <section className="rounded-2xl bg-background border border-border p-5">
             <h2 className="text-xs font-medium text-muted-foreground mb-2">오늘의 행운 단서</h2>
             <div className="flex flex-wrap gap-2">
@@ -366,10 +402,19 @@ export default function ResultPage() {
               ))}
             </div>
           </section>
-        )}
+        ) : aiLoading ? (
+          <section className="rounded-2xl bg-background border border-border p-5">
+            <h2 className="text-xs font-medium text-muted-foreground mb-2">오늘의 행운 단서</h2>
+            <div className="flex flex-wrap gap-2">
+              <Skeleton className="h-8 w-20 rounded-full" />
+              <Skeleton className="h-8 w-24 rounded-full" />
+              <Skeleton className="h-8 w-16 rounded-full" />
+            </div>
+          </section>
+        ) : null}
 
         {/* ── 사주 근거 (접을 수 있는 섹션) ── */}
-        {interpretation?.background && (
+        {interpretation?.background ? (
           <details className="rounded-2xl bg-background border border-border p-5 group">
             <summary className="text-xs font-medium text-muted-foreground cursor-pointer list-none flex items-center justify-between">
               사주 근거 보기
@@ -379,7 +424,14 @@ export default function ResultPage() {
               {interpretation.background}
             </p>
           </details>
-        )}
+        ) : aiLoading ? (
+          <div className="rounded-2xl bg-background border border-border p-5">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-4" />
+            </div>
+          </div>
+        ) : null}
 
         {/* ── 하단 버튼들 ── */}
         <div className="flex flex-col gap-2 mt-2">
@@ -397,6 +449,16 @@ export default function ResultPage() {
           >
             심층 리포트 보기
           </Button>
+          {/* 공유하기 버튼 (AI 해석 완료 시만 표시) */}
+          {interpretation && (
+            <Button
+              onClick={() => setShowShareModal(true)}
+              variant="outline"
+              className="h-11 w-full rounded-xl"
+            >
+              공유하기
+            </Button>
+          )}
           <Button
             onClick={() => router.push('/input')}
             variant="outline"
@@ -405,6 +467,20 @@ export default function ResultPage() {
             다른 사주로 보기
           </Button>
         </div>
+
+        {/* 공유 모달 */}
+        {showShareModal && interpretation && (
+          <ShareModal
+            data={{
+              dailySummary: interpretation.dailySummary,
+              love: { score: daily.reading.love.score, keyword: daily.reading.love.keyword },
+              work: { score: daily.reading.work.score, keyword: daily.reading.work.keyword },
+              money: { score: daily.reading.money.score, keyword: daily.reading.money.keyword },
+              luckyHints: interpretation.luckyHints,
+            } satisfies ShareCardData}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
       </main>
     </div>
   );
@@ -422,6 +498,7 @@ function ReadingCard({
   engineSummary,
   aiInterpretation,
   aiAdvice,
+  aiLoading,
 }: {
   axis: string;
   emoji: 'heart' | 'briefcase' | 'coin';
@@ -430,6 +507,7 @@ function ReadingCard({
   engineSummary: string;
   aiInterpretation?: string;
   aiAdvice?: string;
+  aiLoading: boolean;
 }) {
   const icons = {
     heart: <HeartIcon />,
@@ -459,19 +537,40 @@ function ReadingCard({
         />
       </div>
 
-      {/* 해석 텍스트 (AI 해석 우선, 없으면 엔진 요약) */}
-      <p className="text-sm text-foreground leading-relaxed">
-        {aiInterpretation || engineSummary}
-      </p>
+      {/* 해석 텍스트 (AI 해석 우선, 없으면 로딩 중이면 스켈레톤, 아니면 엔진 요약) */}
+      {aiInterpretation ? (
+        <p className="text-sm text-foreground leading-relaxed">
+          {aiInterpretation}
+        </p>
+      ) : aiLoading ? (
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-4/5" />
+        </div>
+      ) : (
+        <p className="text-sm text-foreground leading-relaxed">
+          {engineSummary}
+        </p>
+      )}
 
-      {/* AI 행동 조언 */}
-      {aiAdvice && (
+      {/* AI 행동 조언 (있으면 표시, 로딩 중이면 스켈레톤) */}
+      {aiAdvice ? (
         <p className="mt-2 text-xs text-muted-foreground">
           {aiAdvice}
         </p>
-      )}
+      ) : aiLoading ? (
+        <Skeleton className="h-3 w-2/3 mt-2" />
+      ) : null}
     </div>
   );
+}
+
+// ──────────────────────────────────────────
+// 스켈레톤 로딩 컴포넌트 (AI 해석 로딩 중 표시)
+// ──────────────────────────────────────────
+
+function Skeleton({ className = '' }: { className?: string }) {
+  return <div className={`animate-pulse bg-muted rounded ${className}`} />;
 }
 
 // ──────────────────────────────────────────

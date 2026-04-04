@@ -115,10 +115,12 @@ export async function POST(request: Request) {
     // 4) JSON 파싱
     const interpretation = parseJSONResponse<DailyInterpretation>(content);
 
-    // 5) 응답 반환
+    // 5) 응답 반환 (AI 응답은 브라우저 캐시 방지)
     return NextResponse.json({
       interpretation,
       usage: aiResponse.usage,
+    }, {
+      headers: { 'Cache-Control': 'no-store' },
     });
   } catch (error) {
     console.error('[/api/interpret] AI 해석 오류:', error);

@@ -103,10 +103,31 @@ export default function Home() {
           </Link>
         </section>
 
+        {/* ── 테마별 랜딩 링크 ── */}
+        <section className="pb-8 flex flex-col items-center gap-3">
+          <Link
+            href="/landing/love"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            연애운이 궁금하다면? →
+          </Link>
+          <Link
+            href="/landing/career"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            이직을 고민 중이라면? →
+          </Link>
+        </section>
+
         {/* ── 푸터 ── */}
         <footer className="py-8 text-center text-xs text-muted-foreground space-y-1">
           <p>NingNing &middot; AI 운세 서비스</p>
           <p>사주 결과는 참고용이며, 중요한 결정의 근거로 사용하지 마세요.</p>
+          <div className="pt-1">
+            <Link href="/privacy" className="hover:text-foreground transition-colors">개인정보처리방침</Link>
+            {' '}&middot;{' '}
+            <Link href="/terms" className="hover:text-foreground transition-colors">이용약관</Link>
+          </div>
         </footer>
       </main>
     </div>
