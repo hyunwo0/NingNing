@@ -3,44 +3,40 @@
 // ==========================================
 //
 // 서비스의 첫 화면입니다.
-// 사용자가 "오늘의 운세 보기" 버튼을 눌러 /input으로 이동하도록 유도합니다.
+// 비회원/회원에 따라 CTA 라벨과 테마 링크 노출이 달라집니다.
 //
 // [구성]
-// 1) 상단 네비게이션: 로그인/마이페이지 링크
-// 2) 히어로 영역: 서비스명 + 한 줄 소개 + CTA 버튼
-// 3) 특징 소개: 3가지 핵심 가치
-// 4) 사용 흐름 안내: 3단계 프로세스
-// 5) 하단 CTA: 한 번 더 유도
+// 1) GNB 헤더: 좌측 로고, 우측 로그인/마이페이지
+// 2) 히어로 영역: 서비스 소개 → 특징 소개 → CTA
+// 3) 테마별 랜딩 링크 (회원만)
+// 4) 푸터
+
+'use client';
 
 import Link from 'next/link';
+import { useAuth } from '@/components/auth/AuthProvider';
 import AuthNavLink from './AuthNavLink';
 
 export default function Home() {
+  const { user, loading } = useAuth();
+  const isLoggedIn = !loading && !!user;
+
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6">
 
-        {/* ── 상단 네비게이션 — 로그인/마이페이지 링크 ── */}
-        <nav className="flex justify-end pt-4">
+        {/* ── GNB 헤더 ── */}
+        <nav className="flex items-center justify-between py-4">
+          <Link href="/" className="text-base font-bold text-foreground">
+            NingNing
+          </Link>
           <AuthNavLink />
         </nav>
 
         {/* ── 히어로 영역 ── */}
-        <section className="flex flex-col items-center text-center pt-12 pb-12 gap-6">
-          {/* 로고/서비스명 */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="size-16 rounded-2xl bg-foreground flex items-center justify-center">
-              <span className="text-2xl text-background font-bold">
-                N
-              </span>
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
-              NingNing
-            </h1>
-          </div>
-
+        <section className="flex flex-col pt-12 pb-12 gap-8">
           {/* 서비스 소개 */}
-          <div className="space-y-2">
+          <div className="text-center space-y-2">
             <p className="text-lg font-medium text-foreground">
               사주명리학 기반 AI 오늘의 운세
             </p>
@@ -50,81 +46,63 @@ export default function Home() {
             </p>
           </div>
 
+          {/* 특징 소개 */}
+          <div className="space-y-6">
+            <FeatureItem
+              icon={<CompassIcon />}
+              title="정통 사주 계산"
+              description="입춘/절기 기준의 정확한 사주 팔자 계산. 만세력 데이터 기반으로 년주, 월주, 일주, 시주를 산출합니다."
+            />
+            <FeatureItem
+              icon={<SparklesIcon />}
+              title="AI 맞춤 해석"
+              description="사주 구조를 근거로 연애, 일, 재물 3가지 축의 오늘 흐름을 현실적인 언어로 풀어드립니다."
+            />
+            <FeatureItem
+              icon={<ShieldIcon />}
+              title="안전한 운세"
+              description="공포 조장이나 확정적 예언 없이, 오늘 실제로 적용할 수 있는 담백한 조언을 제공합니다."
+            />
+          </div>
+
           {/* CTA 버튼 */}
-          <Link
-            href="/input"
-            className="inline-flex h-12 items-center justify-center rounded-xl bg-foreground px-8 text-base font-semibold text-background transition-colors hover:bg-foreground/90"
-          >
-            오늘의 운세 보기
-          </Link>
+          <div className="flex flex-col items-center gap-3">
+            <Link
+              href="/input"
+              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-foreground px-8 text-base font-semibold text-background transition-colors hover:bg-foreground/90"
+            >
+              {isLoggedIn ? '오늘의 운세 보기' : '무료로 운세 보기'}
+            </Link>
 
-          <p className="text-xs text-muted-foreground">
-            회원가입 없이 바로 이용할 수 있습니다
-          </p>
-        </section>
-
-        {/* ── 구분선 ── */}
-        <div className="w-12 h-px bg-border mx-auto" />
-
-        {/* ── 특징 소개 ── */}
-        <section className="py-12 space-y-6">
-          <FeatureItem
-            icon={<CompassIcon />}
-            title="정통 사주 계산"
-            description="입춘/절기 기준의 정확한 사주 팔자 계산. 만세력 데이터 기반으로 년주, 월주, 일주, 시주를 산출합니다."
-          />
-          <FeatureItem
-            icon={<SparklesIcon />}
-            title="AI 맞춤 해석"
-            description="사주 구조를 근거로 연애, 일, 재물 3가지 축의 오늘 흐름을 현실적인 언어로 풀어드립니다."
-          />
-          <FeatureItem
-            icon={<ShieldIcon />}
-            title="안전한 운세"
-            description="공포 조장이나 확정적 예언 없이, 오늘 실제로 적용할 수 있는 담백한 조언을 제공합니다."
-          />
-        </section>
-
-        {/* ── 구분선 ── */}
-        <div className="w-12 h-px bg-border mx-auto" />
-
-        {/* ── 이용 방법 ── */}
-        <section className="py-12 space-y-6">
-          <h2 className="text-sm font-medium text-muted-foreground text-center">
-            이용 방법
-          </h2>
-          <div className="space-y-4">
-            <StepItem step={1} title="생년월일시 입력" description="양력 또는 음력, 태어난 시간을 선택하세요" />
-            <StepItem step={2} title="사주 분석" description="사주 팔자와 오행 분포를 계산합니다" />
-            <StepItem step={3} title="AI 운세 확인" description="오늘의 연애, 일, 재물 운세를 확인하세요" />
+            {/* 보조 문구 (비회원만) */}
+            {!isLoggedIn && (
+              <p className="text-xs text-muted-foreground">
+                회원가입 없이 바로 이용할 수 있습니다
+              </p>
+            )}
           </div>
         </section>
 
-        {/* ── 하단 CTA ── */}
-        <section className="py-12 flex flex-col items-center gap-4">
-          <Link
-            href="/input"
-            className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-foreground px-8 text-base font-semibold text-background transition-colors hover:bg-foreground/90"
-          >
-            무료로 시작하기
-          </Link>
-        </section>
-
-        {/* ── 테마별 랜딩 링크 ── */}
-        <section className="pb-8 flex flex-col items-center gap-3">
-          <Link
-            href="/landing/love"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            연애운이 궁금하다면? →
-          </Link>
-          <Link
-            href="/landing/career"
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            이직을 고민 중이라면? →
-          </Link>
-        </section>
+        {/* ── 테마별 랜딩 링크 (회원만) ── */}
+        {isLoggedIn && (
+          <>
+            <div className="w-12 h-px bg-border mx-auto" />
+            <section className="py-8 flex flex-col items-center gap-3">
+              <Link
+                href="/landing/love"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                연애운이 궁금하다면? →
+              </Link>
+              <Link
+                href="/landing/career"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                이직을 고민 중이라면? →
+              </Link>
+            </section>
+          </>
+        )}
 
         {/* ── 푸터 ── */}
         <footer className="py-8 text-center text-xs text-muted-foreground space-y-1">
@@ -162,28 +140,6 @@ function FeatureItem({
       <div>
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-function StepItem({
-  step,
-  title,
-  description,
-}: {
-  step: number;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex gap-4 items-start">
-      <div className="flex-shrink-0 size-8 rounded-full bg-foreground text-background flex items-center justify-center text-sm font-bold">
-        {step}
-      </div>
-      <div>
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
     </div>
   );
