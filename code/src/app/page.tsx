@@ -65,6 +65,24 @@ export default function Home() {
             />
           </div>
 
+          {/* 테마별 랜딩 링크 (회원만, CTA 위) */}
+          {isLoggedIn && (
+            <div className="flex flex-col items-center gap-3">
+              <Link
+                href="/landing/love"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                연애운이 궁금하다면? →
+              </Link>
+              <Link
+                href="/landing/career"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                이직을 고민 중이라면? →
+              </Link>
+            </div>
+          )}
+
           {/* CTA 버튼 */}
           <div className="flex flex-col items-center gap-3">
             <Link
@@ -82,27 +100,6 @@ export default function Home() {
             )}
           </div>
         </section>
-
-        {/* ── 테마별 랜딩 링크 (회원만) ── */}
-        {isLoggedIn && (
-          <>
-            <div className="w-12 h-px bg-border mx-auto" />
-            <section className="py-8 flex flex-col items-center gap-3">
-              <Link
-                href="/landing/love"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                연애운이 궁금하다면? →
-              </Link>
-              <Link
-                href="/landing/career"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                이직을 고민 중이라면? →
-              </Link>
-            </section>
-          </>
-        )}
 
         {/* ── 푸터 ── */}
         <footer className="py-8 text-center text-xs text-muted-foreground space-y-1">

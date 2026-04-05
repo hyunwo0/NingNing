@@ -73,9 +73,22 @@ export default function SignupPage() {
     setEmailSending(true);
     setVerificationError('');
 
-    const supabase = getSupabaseBrowserClient();
-
     try {
+      // 1) 이메일 중복 체크
+      const checkRes = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const checkData = await checkRes.json();
+
+      if (checkData.exists) {
+        setVerificationError('이미 가입된 이메일입니다');
+        return;
+      }
+
+      // 2) 중복 아니면 가입 + OTP 발송
+      const supabase = getSupabaseBrowserClient();
       const { error } = await supabase.auth.signUp({
         email,
         password: crypto.randomUUID(),
@@ -85,11 +98,7 @@ export default function SignupPage() {
       });
 
       if (error) {
-        if (error.message.includes('already registered')) {
-          setVerificationError('이미 가입된 이메일입니다');
-        } else {
-          setVerificationError(error.message);
-        }
+        setVerificationError(error.message);
         return;
       }
       setEmailSent(true);
