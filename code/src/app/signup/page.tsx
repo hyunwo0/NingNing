@@ -3,20 +3,25 @@
 // ==========================================
 //
 // [역할]
-// 이메일 인증 코드 기반 회원가입을 처리합니다.
+// 이메일 인증 코드(OTP) 기반 회원가입을 처리합니다.
 // /login에서 "회원가입" 링크를 통해 진입합니다.
 //
-// [화면 구성]
-// - 뒤로가기 헤더
-// - 이메일 입력 + 인증 코드 발송/검증
-// - 비밀번호 + 비밀번호 확인
-// - 이용약관/개인정보 동의 (모달)
-// - 회원가입 버튼
+// [가입 흐름]
+// 1) 이메일 입력 → OTP 코드 발송 → 코드 검증
+// 2) 닉네임 입력
+// 3) 비밀번호 + 비밀번호 확인
+// 4) 이용약관/개인정보 동의 (모달)
+// 5) 회원가입 → user_metadata에 닉네임 저장 → 자동 로그인
+//
+// [Supabase 설정 필요]
+// Supabase 대시보드 → Authentication → Email Templates 에서
+// "Confirm signup" 템플릿의 타입을 OTP(6자리 코드)로 설정해야 합니다.
 
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { getSupabaseBrowserClient } from '@/lib/auth/supabase';
 
 export default function SignupPage() {
@@ -30,6 +35,9 @@ export default function SignupPage() {
   const [emailVerified, setEmailVerified] = useState(false);
   const [verificationError, setVerificationError] = useState('');
   const [verifying, setVerifying] = useState(false);
+
+  // 닉네임
+  const [nickname, setNickname] = useState('');
 
   // 비밀번호
   const [password, setPassword] = useState('');
@@ -52,13 +60,14 @@ export default function SignupPage() {
   // 제출 가능 여부
   const canSubmit =
     emailVerified &&
+    nickname.trim().length >= 2 &&
     password.length >= 8 &&
     password === passwordConfirm &&
     agreeTerms &&
     agreePrivacy &&
     !loading;
 
-  // ── 인증 코드 발송 ──
+  // ── 이메일로 OTP 코드 발송 ──
   const handleSendCode = async () => {
     if (!email) return;
     setEmailSending(true);
@@ -67,12 +76,24 @@ export default function SignupPage() {
     const supabase = getSupabaseBrowserClient();
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      const { error } = await supabase.auth.signUp({
+        email,
+        password: crypto.randomUUID(),
+        options: {
+          data: { signup_pending: true },
+        },
+      });
+
       if (error) {
-        setVerificationError(error.message);
+        if (error.message.includes('already registered')) {
+          setVerificationError('이미 가입된 이메일입니다');
+        } else {
+          setVerificationError(error.message);
+        }
         return;
       }
       setEmailSent(true);
+      toast.success('인증 코드가 발송되었습니다. 이메일을 확인해주세요.');
     } catch {
       setVerificationError('인증 코드 발송에 실패했습니다.');
     } finally {
@@ -80,7 +101,7 @@ export default function SignupPage() {
     }
   };
 
-  // ── 인증 코드 확인 ──
+  // ── OTP 코드 확인 ──
   const handleVerifyCode = async () => {
     if (!verificationCode) return;
     setVerifying(true);
@@ -94,9 +115,10 @@ export default function SignupPage() {
         token: verificationCode,
         type: 'email',
       });
+
       if (error) {
         setVerificationError(
-          error.message === 'Token has expired or is invalid'
+          error.message.includes('expired') || error.message.includes('invalid')
             ? '인증 코드가 올바르지 않거나 만료되었습니다'
             : error.message
         );
@@ -119,9 +141,10 @@ export default function SignupPage() {
     const supabase = getSupabaseBrowserClient();
 
     try {
-      // OTP 인증 후 비밀번호 설정
+      // 비밀번호 설정 + 닉네임을 user_metadata에 저장
       const { error: updateError } = await supabase.auth.updateUser({
         password,
+        data: { name: nickname.trim() },
       });
 
       if (updateError) {
@@ -129,7 +152,6 @@ export default function SignupPage() {
         return;
       }
 
-      // 가입 성공 → 홈으로 이동
       router.push('/');
       router.refresh();
     } catch {
@@ -184,8 +206,9 @@ export default function SignupPage() {
                 type="text"
                 value={verificationCode}
                 onChange={(e) => setVerificationCode(e.target.value)}
-                placeholder="인증 코드 입력"
+                placeholder="6자리 코드 입력"
                 disabled={emailVerified}
+                maxLength={6}
                 className="flex-1 h-11 rounded-xl border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 disabled:opacity-50"
               />
               <button
@@ -196,8 +219,6 @@ export default function SignupPage() {
                 {verifying ? '확인 중...' : '확인'}
               </button>
             </div>
-
-            {/* 인증 결과 메시지 */}
             {emailVerified && (
               <p className="text-sm text-green-600 dark:text-green-400 px-1">인증되었습니다</p>
             )}
@@ -206,6 +227,19 @@ export default function SignupPage() {
             )}
           </section>
         )}
+
+        {/* ── 닉네임 ── */}
+        <section className="space-y-1.5">
+          <label className="text-xs font-medium text-muted-foreground">닉네임</label>
+          <input
+            type="text"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            placeholder="2자 이상 입력하세요"
+            maxLength={20}
+            className="w-full h-11 rounded-xl border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20"
+          />
+        </section>
 
         {/* ── 비밀번호 ── */}
         <section className="space-y-3">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         {/* 인증 상태를 앱 전체에서 공유하기 위한 프로바이더 */}
         <AuthProvider>{children}</AuthProvider>
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
