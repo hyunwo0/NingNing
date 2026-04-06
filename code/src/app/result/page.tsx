@@ -120,6 +120,8 @@ export default function ResultPage() {
 
       const interpretData: InterpretResponse = await interpretRes.json();
       setInterpretation(interpretData.interpretation);
+      // AI 해석 결과를 sessionStorage에 캐싱
+      sessionStorage.setItem('sajuInterpretation', JSON.stringify(interpretData.interpretation));
     } catch {
       console.warn('AI 해석 네트워크 오류');
       setAiError(true);
@@ -145,15 +147,33 @@ export default function ResultPage() {
       // 1) sessionStorage에서 입력 데이터 읽기
       const raw = sessionStorage.getItem('sajuInput');
       if (!raw) {
-        // 입력 데이터가 없으면 입력 페이지로 이동
         router.replace('/input');
         return;
       }
 
       const input = JSON.parse(raw);
 
+      // 2) 캐시 확인: 이미 결과가 있으면 API 호출 스킵
+      const cachedResult = sessionStorage.getItem('sajuResult');
+      const cachedInterpret = sessionStorage.getItem('sajuInterpretation');
+      const needsFetch = sessionStorage.getItem('sajuNeedsFetch');
+
+      if (cachedResult && !needsFetch) {
+        // 캐시된 결과 사용 (뒤로가기, 재진입 등)
+        const saju: SajuResponse = JSON.parse(cachedResult);
+        setSajuData(saju);
+        if (cachedInterpret) {
+          setInterpretation(JSON.parse(cachedInterpret));
+        }
+        setStep('done');
+        return;
+      }
+
+      // 새 요청 플래그 제거
+      sessionStorage.removeItem('sajuNeedsFetch');
+
       try {
-        // 2) 사주 계산 API 호출
+        // 3) 사주 계산 API 호출
         setStep('loading-saju');
         const sajuRes = await fetch('/api/saju', {
           method: 'POST',
@@ -169,10 +189,12 @@ export default function ResultPage() {
         const saju: SajuResponse = await sajuRes.json();
         setSajuData(saju);
 
-        // 사주 결과를 sessionStorage에 저장 (추가질문 페이지에서 사용)
+        // 사주 결과를 sessionStorage에 저장
         sessionStorage.setItem('sajuResult', JSON.stringify(saju));
+        // 이전 해석 캐시 제거 (새 사주이므로)
+        sessionStorage.removeItem('sajuInterpretation');
 
-        // 3) 사주 결과가 나오면 바로 화면 표시, AI 해석은 백그라운드로 진행
+        // 4) 사주 결과가 나오면 바로 화면 표시, AI 해석은 백그라운드로 진행
         setStep('done');
         fetchInterpretation(saju, input.gender);
       } catch (error) {

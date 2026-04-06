@@ -13,7 +13,7 @@
 
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import ShareCard, { type ShareCardData } from './ShareCard';
 
@@ -252,6 +252,14 @@ function generateShareImage(data: ShareCardData): Promise<Blob> {
 export default function ShareModal({ data, onClose }: ShareModalProps) {
   const [copySuccess, setCopySuccess] = useState(false);
   const [imageGenerating, setImageGenerating] = useState(false);
+
+  // 모달 열릴 때 body 스크롤 잠금
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
   // 이미지 저장 핸들러
   const handleSaveImage = useCallback(async () => {

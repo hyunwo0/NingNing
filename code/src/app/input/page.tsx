@@ -104,6 +104,12 @@ export default function InputPage() {
     };
 
     sessionStorage.setItem('sajuInput', JSON.stringify(inputData));
+    // 새로운 입력이므로 기존 캐시 전부 초기화
+    sessionStorage.removeItem('sajuResult');
+    sessionStorage.removeItem('sajuInterpretation');
+    sessionStorage.removeItem('sajuReport');
+    sessionStorage.removeItem('sajuQAHistory');
+    sessionStorage.setItem('sajuNeedsFetch', 'true');
 
     // 결과 페이지로 이동
     router.push('/result');

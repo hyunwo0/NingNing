@@ -68,8 +68,15 @@ export default function ReportPage() {
       const sajuInputRaw = sessionStorage.getItem('sajuInput');
 
       if (!sajuResultRaw || !sajuInputRaw) {
-        // 데이터가 없으면 입력 페이지로 이동
         router.replace('/input');
+        return;
+      }
+
+      // 2) 캐시 확인: 이미 리포트가 있으면 API 호출 스킵
+      const cachedReport = sessionStorage.getItem('sajuReport');
+      if (cachedReport) {
+        setReport(JSON.parse(cachedReport));
+        setState('done');
         return;
       }
 
@@ -77,7 +84,7 @@ export default function ReportPage() {
       const sajuInput = JSON.parse(sajuInputRaw);
 
       try {
-        // 2) 심층 리포트 API 호출
+        // 3) 심층 리포트 API 호출
         setState('loading');
         const res = await fetch('/api/report', {
           method: 'POST',
@@ -102,6 +109,8 @@ export default function ReportPage() {
 
         const data = await res.json();
         setReport(data.report);
+        // 리포트 결과를 sessionStorage에 캐싱
+        sessionStorage.setItem('sajuReport', JSON.stringify(data.report));
         setState('done');
       } catch (error) {
         console.error('심층 리포트 로딩 오류:', error);

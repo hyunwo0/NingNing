@@ -70,13 +70,12 @@ export default function QuestionPage() {
   const remainingFree = MAX_FREE_QUESTIONS - qaHistory.length;
   const isLimitReached = remainingFree <= 0;
 
-  // sessionStorage에서 사주 데이터 로드
+  // sessionStorage에서 사주 데이터 + 대화 이력 로드
   useEffect(() => {
     const sajuResult = sessionStorage.getItem('sajuResult');
     const sajuInput = sessionStorage.getItem('sajuInput');
 
     if (!sajuResult || !sajuInput) {
-      // 데이터가 없으면 입력 페이지로
       router.replace('/input');
       return;
     }
@@ -95,6 +94,12 @@ export default function QuestionPage() {
       daily: result.daily,
       gender: input.gender,
     });
+
+    // 캐시된 대화 이력 복원
+    const cachedQA = sessionStorage.getItem('sajuQAHistory');
+    if (cachedQA) {
+      setQaHistory(JSON.parse(cachedQA));
+    }
   }, [router]);
 
   // 새 답변이 오면 스크롤 하단으로
@@ -145,7 +150,11 @@ export default function QuestionPage() {
 
       const data = await res.json();
 
-      setQaHistory(prev => [...prev, { question, answer: data.answer }]);
+      setQaHistory(prev => {
+        const updated = [...prev, { question, answer: data.answer }];
+        sessionStorage.setItem('sajuQAHistory', JSON.stringify(updated));
+        return updated;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : '오류가 발생했습니다');
       // 실패한 질문은 입력창에 복원

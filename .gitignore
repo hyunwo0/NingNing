@@ -12,6 +12,9 @@ out/
 .env.production.local
 .env.development.local
 
+# Claude Code
+CLAUDE.md
+
 # OS/에디터
 .DS_Store
 Thumbs.db
