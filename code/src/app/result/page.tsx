@@ -61,8 +61,7 @@ interface InterpretResponse {
   };
 }
 
-// 로딩 단계 (사주 계산 완료 시 바로 'done'으로 전환, AI 로딩은 aiLoading 상태로 관리)
-type LoadingStep = 'loading-saju' | 'done' | 'error';
+type LoadingStep = 'init' | 'done' | 'error';
 
 // ──────────────────────────────────────────
 // 메인 컴포넌트
@@ -71,7 +70,7 @@ type LoadingStep = 'loading-saju' | 'done' | 'error';
 export default function ResultPage() {
   const router = useRouter();
 
-  const [step, setStep] = useState<LoadingStep>('loading-saju');
+  const [step, setStep] = useState<LoadingStep>('init');
   const [errorMessage, setErrorMessage] = useState('');
 
   // 사주 계산 결과
@@ -91,7 +90,7 @@ export default function ResultPage() {
   // 결과 저장 상태
   const [isSaved, setIsSaved] = useState(false);
 
-  // AI 해석 API 호출 (재시도 가능하도록 별도 함수)
+  // AI 해석 API 호출 (재시도용)
   const fetchInterpretation = useCallback(async (saju: SajuResponse, gender: string) => {
     setAiError(false);
     setAiLoading(true);
@@ -113,17 +112,14 @@ export default function ResultPage() {
       });
 
       if (!interpretRes.ok) {
-        console.warn('AI 해석 실패, 기본 결과만 표시');
         setAiError(true);
         return;
       }
 
       const interpretData: InterpretResponse = await interpretRes.json();
       setInterpretation(interpretData.interpretation);
-      // AI 해석 결과를 sessionStorage에 캐싱
       sessionStorage.setItem('sajuInterpretation', JSON.stringify(interpretData.interpretation));
     } catch {
-      console.warn('AI 해석 네트워크 오류');
       setAiError(true);
     } finally {
       setAiLoading(false);
@@ -142,69 +138,26 @@ export default function ResultPage() {
     setAiRetrying(false);
   }, [sajuData, aiRetrying, fetchInterpretation]);
 
+  // sessionStorage에서 캐시된 결과 로드 (API 호출은 /input에서 수행)
   useEffect(() => {
-    async function fetchResults() {
-      // 1) sessionStorage에서 입력 데이터 읽기
-      const raw = sessionStorage.getItem('sajuInput');
-      if (!raw) {
-        router.replace('/input');
-        return;
-      }
+    const cachedResult = sessionStorage.getItem('sajuResult');
 
-      const input = JSON.parse(raw);
-
-      // 2) 캐시 확인: 이미 결과가 있으면 API 호출 스킵
-      const cachedResult = sessionStorage.getItem('sajuResult');
-      const cachedInterpret = sessionStorage.getItem('sajuInterpretation');
-      const needsFetch = sessionStorage.getItem('sajuNeedsFetch');
-
-      if (cachedResult && !needsFetch) {
-        // 캐시된 결과 사용 (뒤로가기, 재진입 등)
-        const saju: SajuResponse = JSON.parse(cachedResult);
-        setSajuData(saju);
-        if (cachedInterpret) {
-          setInterpretation(JSON.parse(cachedInterpret));
-        }
-        setStep('done');
-        return;
-      }
-
-      // 새 요청 플래그 제거
-      sessionStorage.removeItem('sajuNeedsFetch');
-
-      try {
-        // 3) 사주 계산 API 호출
-        setStep('loading-saju');
-        const sajuRes = await fetch('/api/saju', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(input),
-        });
-
-        if (!sajuRes.ok) {
-          const err = await sajuRes.json();
-          throw new Error(err.error || '사주 계산 실패');
-        }
-
-        const saju: SajuResponse = await sajuRes.json();
-        setSajuData(saju);
-
-        // 사주 결과를 sessionStorage에 저장
-        sessionStorage.setItem('sajuResult', JSON.stringify(saju));
-        // 이전 해석 캐시 제거 (새 사주이므로)
-        sessionStorage.removeItem('sajuInterpretation');
-
-        // 4) 사주 결과가 나오면 바로 화면 표시, AI 해석은 백그라운드로 진행
-        setStep('done');
-        fetchInterpretation(saju, input.gender);
-      } catch (error) {
-        console.error('결과 로딩 오류:', error);
-        setErrorMessage(error instanceof Error ? error.message : '알 수 없는 오류');
-        setStep('error');
-      }
+    if (!cachedResult) {
+      router.replace('/input');
+      return;
     }
 
-    fetchResults();
+    const saju: SajuResponse = JSON.parse(cachedResult);
+    setSajuData(saju);
+
+    const cachedInterpret = sessionStorage.getItem('sajuInterpretation');
+    if (cachedInterpret) {
+      setInterpretation(JSON.parse(cachedInterpret));
+    } else {
+      setAiError(true);
+    }
+
+    setStep('done');
   }, [router, fetchInterpretation]);
 
   // ── 저장 여부 확인 (오늘 날짜 기준) ──
@@ -254,18 +207,9 @@ export default function ResultPage() {
     }
   };
 
-  // ── 로딩 화면 (사주 계산 중에만 표시) ──
-  if (step === 'loading-saju') {
-    return (
-      <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <LoadingSpinner />
-          <p className="text-sm text-muted-foreground animate-pulse">
-            사주를 분석하고 있습니다...
-          </p>
-        </div>
-      </div>
-    );
+  // ── 초기 로딩 (캐시 읽는 중) ──
+  if (step === 'init') {
+    return <div className="flex flex-1 bg-zinc-50 dark:bg-black min-h-screen" />;
   }
 
   // ── 에러 화면 ──
@@ -542,7 +486,11 @@ export default function ResultPage() {
             AI에게 추가 질문하기
           </Button>
           <Button
-            onClick={() => router.push('/report')}
+            onClick={() => {
+              // 캐시가 있으면 바로 리포트, 없으면 로딩 페이지 경유
+              const cached = sessionStorage.getItem('sajuReport');
+              router.push(cached ? '/report' : '/loading-screen?type=report');
+            }}
             variant="secondary"
             className="h-11 w-full rounded-xl"
           >

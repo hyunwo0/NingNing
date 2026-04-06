@@ -3,7 +3,6 @@
 // ==========================================
 //
 // 사용자가 생년월일시와 성별을 입력하는 폼 페이지입니다.
-// "use client"가 필요한 이유: useState, onChange 등 브라우저 상호작용이 필요하기 때문
 //
 // [사용자 흐름]
 // 1) 양력/음력 선택
@@ -11,11 +10,11 @@
 // 3) 태어난 시간 선택 (12시진 또는 "모름")
 // 4) 성별 선택
 // 5) "운세 보기" 버튼 클릭
-// → /result 페이지로 이동 (입력 데이터를 sessionStorage에 저장)
+// → 로딩 화면 (재미있는 문구 순환) → API 호출 → 결과 캐싱 → /result로 이동
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { TWELVE_HOURS } from '@/lib/saju/types';
@@ -24,22 +23,14 @@ import { TWELVE_HOURS } from '@/lib/saju/types';
 // 상수 정의
 // ──────────────────────────────────────────
 
-// 연도 범위 (1940~2010)
-const YEARS = Array.from({ length: 71 }, (_, i) => 2010 - i); // [2010, 2009, ..., 1940]
-const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);   // [1, 2, ..., 12]
+const YEARS = Array.from({ length: 71 }, (_, i) => 2010 - i);
+const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
-// 월별 일수를 계산하는 함수
 function getDaysInMonth(year: number, month: number, isLunar: boolean): number {
-  if (isLunar) {
-    // 음력은 29~30일이지만, 정확한 계산은 서버에서 하므로 최대 30일 허용
-    return 30;
-  }
-  // 양력: JavaScript Date 객체로 정확한 일수 계산
-  // month가 0-indexed이므로, 다음 달의 0일 = 이번 달의 마지막 날
+  if (isLunar) return 30;
   return new Date(year, month, 0).getDate();
 }
 
-// 시진 옵션 목록 (12시진 + 모름)
 const TIME_OPTIONS = [
   { value: 'unknown', label: '모름' },
   ...TWELVE_HOURS.map(h => ({
@@ -64,35 +55,26 @@ export default function InputPage() {
   const [birthTime, setBirthTime] = useState<string>('unknown');
   const [gender, setGender] = useState<'male' | 'female' | null>(null);
 
-  // 제출 중 상태 (중복 제출 방지)
+  // 제출 중 상태
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 현재 선택된 연/월에 따른 최대 일수
   const maxDay = getDaysInMonth(birthYear, birthMonth, calendarType === 'lunar');
-
-  // 선택된 일이 최대 일수를 초과하면 자동 조정
-  // 예: 2월 30일 선택 → 2월 28일로 조정
   const adjustedDay = Math.min(birthDay, maxDay);
 
-  // useEffect로 이동하여 렌더 중 setState 호출 방지
   useEffect(() => {
     if (adjustedDay !== birthDay) {
       setBirthDay(adjustedDay);
     }
   }, [adjustedDay, birthDay]);
 
-  // 일 옵션 목록 (현재 연/월에 따라 동적)
   const days = Array.from({ length: maxDay }, (_, i) => i + 1);
 
-  // 폼 제출 처리
-  const handleSubmit = useCallback(() => {
-    // 성별 미선택 시 제출 불가
+  // 폼 제출 → sessionStorage 저장 → 로딩 페이지로 이동
+  const handleSubmit = () => {
     if (!gender) return;
 
     setIsSubmitting(true);
 
-    // 입력 데이터를 sessionStorage에 저장
-    // (API 호출은 /result 페이지에서 수행)
     const inputData = {
       calendarType,
       isLeapMonth: calendarType === 'lunar' ? isLeapMonth : false,
@@ -103,18 +85,18 @@ export default function InputPage() {
       gender,
     };
 
+    // 입력 저장 + 기존 캐시 초기화
     sessionStorage.setItem('sajuInput', JSON.stringify(inputData));
-    // 새로운 입력이므로 기존 캐시 전부 초기화
     sessionStorage.removeItem('sajuResult');
     sessionStorage.removeItem('sajuInterpretation');
     sessionStorage.removeItem('sajuReport');
     sessionStorage.removeItem('sajuQAHistory');
-    sessionStorage.setItem('sajuNeedsFetch', 'true');
 
-    // 결과 페이지로 이동
-    router.push('/result');
-  }, [calendarType, isLeapMonth, birthYear, birthMonth, adjustedDay, birthTime, gender, router]);
+    // 로딩 페이지로 이동 (API 호출은 로딩 페이지에서 수행)
+    router.push('/loading-screen?type=saju');
+  };
 
+  // ── 입력 폼 ──
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6 py-10 gap-8">
@@ -158,7 +140,6 @@ export default function InputPage() {
             </button>
           </div>
 
-          {/* 음력 선택 시 윤달 체크박스 표시 */}
           {calendarType === 'lunar' && (
             <label className="flex items-center gap-2 text-sm text-muted-foreground pt-1 cursor-pointer">
               <input
@@ -178,7 +159,6 @@ export default function InputPage() {
             생년월일
           </label>
           <div className="grid grid-cols-3 gap-2">
-            {/* 연도 드롭다운 */}
             <div className="relative">
               <select
                 value={birthYear}
@@ -192,7 +172,6 @@ export default function InputPage() {
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             </div>
 
-            {/* 월 드롭다운 */}
             <div className="relative">
               <select
                 value={birthMonth}
@@ -206,7 +185,6 @@ export default function InputPage() {
               <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             </div>
 
-            {/* 일 드롭다운 */}
             <div className="relative">
               <select
                 value={adjustedDay}
@@ -282,7 +260,7 @@ export default function InputPage() {
           className="h-12 w-full rounded-xl text-base font-semibold mt-2"
           size="lg"
         >
-          {isSubmitting ? '분석 중...' : '오늘의 운세 보기'}
+          오늘의 운세 보기
         </Button>
 
         <p className="text-center text-xs text-muted-foreground">
@@ -295,8 +273,9 @@ export default function InputPage() {
 }
 
 // ──────────────────────────────────────────
-// 드롭다운 화살표 아이콘 (인라인)
+// 하위 컴포넌트
 // ──────────────────────────────────────────
+
 function ChevronDown({ className }: { className?: string }) {
   return (
     <svg

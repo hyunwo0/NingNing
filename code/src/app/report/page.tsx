@@ -62,64 +62,17 @@ export default function ReportPage() {
   const [report, setReport] = useState<ReportData | null>(null);
 
   useEffect(() => {
-    async function fetchReport() {
-      // 1) sessionStorage에서 사주 결과와 입력 데이터 읽기
-      const sajuResultRaw = sessionStorage.getItem('sajuResult');
-      const sajuInputRaw = sessionStorage.getItem('sajuInput');
+    // sessionStorage에서 캐시된 리포트 로드 (API 호출은 /loading-screen에서 수행)
+    const cachedReport = sessionStorage.getItem('sajuReport');
 
-      if (!sajuResultRaw || !sajuInputRaw) {
-        router.replace('/input');
-        return;
-      }
-
-      // 2) 캐시 확인: 이미 리포트가 있으면 API 호출 스킵
-      const cachedReport = sessionStorage.getItem('sajuReport');
-      if (cachedReport) {
-        setReport(JSON.parse(cachedReport));
-        setState('done');
-        return;
-      }
-
-      const sajuResult = JSON.parse(sajuResultRaw);
-      const sajuInput = JSON.parse(sajuInputRaw);
-
-      try {
-        // 3) 심층 리포트 API 호출
-        setState('loading');
-        const res = await fetch('/api/report', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            analysis: {
-              fourPillars: sajuResult.fourPillars,
-              fiveElements: sajuResult.fiveElements,
-              dayMaster: sajuResult.dayMaster,
-              dayMasterElement: sajuResult.dayMasterElement,
-              dayMasterStrength: sajuResult.dayMasterStrength,
-            },
-            daily: sajuResult.daily,
-            gender: sajuInput.gender,
-          }),
-        });
-
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || '심층 리포트 생성 실패');
-        }
-
-        const data = await res.json();
-        setReport(data.report);
-        // 리포트 결과를 sessionStorage에 캐싱
-        sessionStorage.setItem('sajuReport', JSON.stringify(data.report));
-        setState('done');
-      } catch (error) {
-        console.error('심층 리포트 로딩 오류:', error);
-        setErrorMessage(error instanceof Error ? error.message : '알 수 없는 오류');
-        setState('error');
-      }
+    if (cachedReport) {
+      setReport(JSON.parse(cachedReport));
+      setState('done');
+    } else {
+      // 캐시 없으면: 사주 결과가 있으면 result로, 없으면 홈으로
+      const hasResult = sessionStorage.getItem('sajuResult');
+      router.replace(hasResult ? '/result' : '/');
     }
-
-    fetchReport();
   }, [router]);
 
   // ── 로딩 화면 ──
