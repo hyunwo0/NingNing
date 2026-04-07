@@ -30,17 +30,42 @@ interface InterpretRequest {
   gender: 'male' | 'female';
 }
 
-// Claude가 반환할 JSON 구조
+// Claude가 반환할 JSON 구조 (v3 K-콘텐츠 톤)
 interface DailyInterpretation {
-  dailySummary: string;
-  dailyKeywords: string[];
-  background: string;
-  loveReading: { interpretation: string; advice: string };
-  workReading: { interpretation: string; advice: string };
-  moneyReading: { interpretation: string; advice: string };
-  doToday: string;
-  avoidToday: string;
-  luckyHints: string[];
+  coreMood: {
+    mode: string;
+    summary: string;
+    keywords: string[];
+  };
+  love: {
+    status: string;
+    interpretation: string;
+    tip: string;
+  };
+  work: {
+    status: string;
+    interpretation: string;
+    tip: string;
+  };
+  money: {
+    status: string;
+    interpretation: string;
+    tip: string;
+  };
+  strategy: {
+    english: string;
+    korean: string;
+  };
+  luckBoosters: {
+    styleCode: string;
+    luckyNumber: string;
+    energyDirection: string;
+    goldenTime: string;
+  };
+  kOracle: {
+    energyDay: string;
+    interpretation: string;
+  };
 }
 
 // 요청 바디 크기 제한 (10KB)

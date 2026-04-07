@@ -26,7 +26,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import ShareModal from '@/components/share/ShareModal';
 import type { ShareCardData } from '@/components/share/ShareCard';
-import type { FourPillars, FiveElementProfile, DailyRelation, DayMasterStrength, HeavenlyStem, FiveElement } from '@/lib/saju/types';
+import type { DailyRelation } from '@/lib/saju/types';
 
 // ──────────────────────────────────────────
 // 타입 정의
@@ -34,30 +34,24 @@ import type { FourPillars, FiveElementProfile, DailyRelation, DayMasterStrength,
 
 // /api/saju 응답 타입
 interface SajuResponse {
-  fourPillars: FourPillars;
-  fiveElements: FiveElementProfile;
-  dayMaster: HeavenlyStem;
-  dayMasterElement: FiveElement;
-  dayMasterStrength: DayMasterStrength;
+  fourPillars: Record<string, unknown>;
+  fiveElements: Record<string, unknown>;
+  dayMaster: string;
+  dayMasterElement: string;
+  dayMasterStrength: string;
   daily: DailyRelation;
-  display: {
-    fourPillars: string;
-    fiveElements: string;
-  };
 }
 
-// /api/interpret 응답 타입
+// /api/interpret 응답 타입 (v3 K-콘텐츠 톤)
 interface InterpretResponse {
   interpretation: {
-    dailySummary: string;
-    dailyKeywords: string[];
-    background: string;
-    loveReading: { interpretation: string; advice: string };
-    workReading: { interpretation: string; advice: string };
-    moneyReading: { interpretation: string; advice: string };
-    doToday: string;
-    avoidToday: string;
-    luckyHints: string[];
+    coreMood: { mode: string; summary: string; keywords: string[] };
+    love: { status: string; interpretation: string; tip: string };
+    work: { status: string; interpretation: string; tip: string };
+    money: { status: string; interpretation: string; tip: string };
+    strategy: { english: string; korean: string };
+    luckBoosters: { styleCode: string; luckyNumber: string; energyDirection: string; goldenTime: string };
+    kOracle: { energyDay: string; interpretation: string };
   };
 }
 
@@ -183,8 +177,8 @@ export default function ResultPage() {
     const newResult = {
       id: `${Date.now()}`,
       date: today,
-      dailySummary: interpretation.dailySummary,
-      keywords: interpretation.dailyKeywords,
+      dailySummary: `${interpretation.coreMood.mode} — ${interpretation.coreMood.summary}`,
+      keywords: interpretation.coreMood.keywords,
       scores: {
         love: sajuData.daily.reading.love.score,
         work: sajuData.daily.reading.work.score,
@@ -230,7 +224,7 @@ export default function ResultPage() {
   // ── 결과 화면 ──
   if (!sajuData) return null;
 
-  const { fourPillars, fiveElements, dayMaster, dayMasterElement, dayMasterStrength, daily } = sajuData;
+  const { daily } = sajuData;
 
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
@@ -285,196 +279,92 @@ export default function ResultPage() {
           </div>
         )}
 
-        {/* ── 사주 팔자 표시 ── */}
-        <section className="rounded-2xl bg-background border border-border p-5">
-          <h2 className="text-xs font-medium text-muted-foreground mb-3">나의 사주 팔자</h2>
-          <div className="grid grid-cols-4 gap-2 text-center">
-            {(['year', 'month', 'day', 'hour'] as const).map((key) => {
-              const pillar = key === 'hour' ? fourPillars.hour : fourPillars[key];
-              const labels = { year: '년주', month: '월주', day: '일주', hour: '시주' };
-              return (
-                <div key={key} className="flex flex-col items-center gap-1">
-                  <span className="text-[10px] text-muted-foreground">{labels[key]}</span>
-                  {pillar ? (
-                    <>
-                      <span className="text-xl font-bold text-foreground">{pillar.stem}</span>
-                      <span className="text-lg text-muted-foreground">{pillar.branch}</span>
-                    </>
-                  ) : (
-                    <span className="text-lg text-muted-foreground">미상</span>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-3 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-            <span>일간: {dayMaster}({dayMasterElement})</span>
-            <span>{dayMasterStrength === 'strong' ? '신강' : dayMasterStrength === 'weak' ? '신약' : '중화'}</span>
-          </div>
-        </section>
-
-        {/* ── 오행 분포 ── */}
-        <section className="rounded-2xl bg-background border border-border p-5">
-          <h2 className="text-xs font-medium text-muted-foreground mb-3">오행 분포</h2>
-          <div className="flex items-end justify-between gap-1 h-20">
-            {(['목', '화', '토', '금', '수'] as const).map((elem) => {
-              const count = fiveElements.counts[elem];
-              const maxCount = Math.max(...Object.values(fiveElements.counts), 1);
-              const heightPercent = (count / maxCount) * 100;
-              const colors: Record<string, string> = {
-                '목': 'bg-green-500', '화': 'bg-red-500', '토': 'bg-yellow-600',
-                '금': 'bg-gray-400', '수': 'bg-blue-500',
-              };
-              return (
-                <div key={elem} className="flex flex-col items-center gap-1 flex-1">
-                  <span className="text-xs font-medium text-foreground">{count}</span>
-                  <div className="w-full rounded-t-sm flex items-end" style={{ height: '48px' }}>
-                    <div
-                      className={`w-full rounded-t-sm ${colors[elem]} transition-all`}
-                      style={{ height: `${Math.max(heightPercent, 8)}%` }}
-                    />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">{elem}</span>
-                </div>
-              );
-            })}
-          </div>
-          {fiveElements.lacking && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              부족한 오행: <span className="font-medium text-foreground">{fiveElements.lacking}</span>
-            </p>
-          )}
-        </section>
-
-        {/* ── AI 한 줄 총평 ── */}
+        {/* ── 오늘의 무드 ── */}
         {interpretation ? (
           <section className="rounded-2xl bg-foreground text-background p-5">
-            <p className="text-lg font-semibold leading-relaxed">
-              {interpretation.dailySummary}
+            <p className="text-xs text-background/60 mb-1">오늘의 무드</p>
+            <p className="text-xl font-bold">{interpretation.coreMood.mode}</p>
+            <p className="text-sm mt-2 leading-relaxed text-background/80">
+              {interpretation.coreMood.summary}
             </p>
-            <div className="flex gap-2 mt-3">
-              {interpretation.dailyKeywords.map((kw) => (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {interpretation.coreMood.keywords.map((kw) => (
                 <span key={kw} className="text-xs px-2 py-0.5 rounded-full bg-background/20">
                   {kw}
                 </span>
               ))}
             </div>
           </section>
-        ) : aiLoading ? (
-          <section className="rounded-2xl bg-foreground text-background p-5">
-            <Skeleton className="h-6 w-3/4 bg-background/20" />
-            <Skeleton className="h-6 w-1/2 bg-background/20 mt-2" />
-            <div className="flex gap-2 mt-3">
-              <Skeleton className="h-5 w-14 rounded-full bg-background/20" />
-              <Skeleton className="h-5 w-14 rounded-full bg-background/20" />
-              <Skeleton className="h-5 w-14 rounded-full bg-background/20" />
-            </div>
-          </section>
         ) : null}
 
         {/* ── 3축 운세 카드 ── */}
         <section className="flex flex-col gap-3">
-          <ReadingCard
-            axis="연애"
-            emoji="heart"
+          <EnergyCard
+            icon="heart"
+            label="연애"
             score={daily.reading.love.score}
-            keyword={daily.reading.love.keyword}
+            status={interpretation?.love.status}
+            tip={interpretation?.love.tip}
+            interpretation={interpretation?.love.interpretation}
             engineSummary={daily.reading.love.summary}
-            aiInterpretation={interpretation?.loveReading.interpretation}
-            aiAdvice={interpretation?.loveReading.advice}
-            aiLoading={aiLoading}
           />
-          <ReadingCard
-            axis="일/직장"
-            emoji="briefcase"
+          <EnergyCard
+            icon="briefcase"
+            label="일/직장"
             score={daily.reading.work.score}
-            keyword={daily.reading.work.keyword}
+            status={interpretation?.work.status}
+            tip={interpretation?.work.tip}
+            interpretation={interpretation?.work.interpretation}
             engineSummary={daily.reading.work.summary}
-            aiInterpretation={interpretation?.workReading.interpretation}
-            aiAdvice={interpretation?.workReading.advice}
-            aiLoading={aiLoading}
           />
-          <ReadingCard
-            axis="재물"
-            emoji="coin"
+          <EnergyCard
+            icon="coin"
+            label="재물"
             score={daily.reading.money.score}
-            keyword={daily.reading.money.keyword}
+            status={interpretation?.money.status}
+            tip={interpretation?.money.tip}
+            interpretation={interpretation?.money.interpretation}
             engineSummary={daily.reading.money.summary}
-            aiInterpretation={interpretation?.moneyReading.interpretation}
-            aiAdvice={interpretation?.moneyReading.advice}
-            aiLoading={aiLoading}
           />
         </section>
 
-        {/* ── 오늘의 행동 조언 ── */}
-        {interpretation ? (
-          <section className="rounded-2xl bg-background border border-border p-5 space-y-3">
-            <div>
-              <h3 className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">오늘 하면 좋은 것</h3>
-              <p className="text-sm text-foreground">{interpretation.doToday}</p>
-            </div>
-            <div className="border-t border-border pt-3">
-              <h3 className="text-xs font-medium text-red-500 dark:text-red-400 mb-1">오늘 피하면 좋은 것</h3>
-              <p className="text-sm text-foreground">{interpretation.avoidToday}</p>
-            </div>
+        {/* ── 오늘의 전략 ── */}
+        {interpretation?.strategy && (
+          <section className="rounded-2xl bg-foreground text-background p-5 text-center">
+            <p className="text-xs text-background/60 mb-2">오늘의 전략</p>
+            <p className="text-lg font-bold">{interpretation.strategy.korean}</p>
+            <p className="text-sm text-background/50 mt-1">{interpretation.strategy.english}</p>
           </section>
-        ) : aiLoading ? (
-          <section className="rounded-2xl bg-background border border-border p-5 space-y-3">
-            <div>
-              <h3 className="text-xs font-medium text-green-600 dark:text-green-400 mb-1">오늘 하면 좋은 것</h3>
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3 mt-1" />
-            </div>
-            <div className="border-t border-border pt-3">
-              <h3 className="text-xs font-medium text-red-500 dark:text-red-400 mb-1">오늘 피하면 좋은 것</h3>
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-2/3 mt-1" />
-            </div>
-          </section>
-        ) : null}
+        )}
 
-        {/* ── 행운 단서 ── */}
-        {interpretation?.luckyHints && interpretation.luckyHints.length > 0 ? (
+        {/* ── 행운 부스터 ── */}
+        {interpretation?.luckBoosters && (
           <section className="rounded-2xl bg-background border border-border p-5">
-            <h2 className="text-xs font-medium text-muted-foreground mb-2">오늘의 행운 단서</h2>
-            <div className="flex flex-wrap gap-2">
-              {interpretation.luckyHints.map((hint) => (
-                <span key={hint} className="text-sm px-3 py-1.5 rounded-full bg-muted text-foreground">
-                  {hint}
-                </span>
-              ))}
+            <h2 className="text-base font-semibold text-foreground mb-4">행운 부스터</h2>
+            <div className="space-y-4">
+              <BoosterItem title="스타일 코드" value={interpretation.luckBoosters.styleCode} />
+              <BoosterItem title="행운 숫자" value={interpretation.luckBoosters.luckyNumber} />
+              <BoosterItem title="에너지 방향" value={interpretation.luckBoosters.energyDirection} />
+              <BoosterItem title="골든 타임" value={interpretation.luckBoosters.goldenTime} />
             </div>
           </section>
-        ) : aiLoading ? (
-          <section className="rounded-2xl bg-background border border-border p-5">
-            <h2 className="text-xs font-medium text-muted-foreground mb-2">오늘의 행운 단서</h2>
-            <div className="flex flex-wrap gap-2">
-              <Skeleton className="h-8 w-20 rounded-full" />
-              <Skeleton className="h-8 w-24 rounded-full" />
-              <Skeleton className="h-8 w-16 rounded-full" />
-            </div>
-          </section>
-        ) : null}
+        )}
 
-        {/* ── 사주 근거 (접을 수 있는 섹션) ── */}
-        {interpretation?.background ? (
+        {/* ── 사주 해석 (접이식) ── */}
+        {interpretation?.kOracle && (
           <details className="rounded-2xl bg-background border border-border p-5 group">
             <summary className="text-xs font-medium text-muted-foreground cursor-pointer list-none flex items-center justify-between">
-              사주 근거 보기
+              사주 해석 보기
               <svg className="size-4 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="m6 9 6 6 6-6" /></svg>
             </summary>
-            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-              {interpretation.background}
-            </p>
-          </details>
-        ) : aiLoading ? (
-          <div className="rounded-2xl bg-background border border-border p-5">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-4" />
+            <div className="mt-3">
+              <p className="text-sm font-medium text-foreground">{interpretation.kOracle.energyDay}</p>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+                {interpretation.kOracle.interpretation}
+              </p>
             </div>
-          </div>
-        ) : null}
+          </details>
+        )}
 
         {/* ── 하단 버튼들 ── */}
         <div className="flex flex-col gap-2 mt-2">
@@ -487,7 +377,6 @@ export default function ResultPage() {
           </Button>
           <Button
             onClick={() => {
-              // 캐시가 있으면 바로 리포트, 없으면 로딩 페이지 경유
               const cached = sessionStorage.getItem('sajuReport');
               router.push(cached ? '/report' : '/loading-screen?type=report');
             }}
@@ -496,7 +385,6 @@ export default function ResultPage() {
           >
             심층 리포트 보기
           </Button>
-          {/* 공유하기 버튼 (AI 해석 완료 시만 표시) */}
           {interpretation && (
             <Button
               onClick={() => setShowShareModal(true)}
@@ -519,11 +407,11 @@ export default function ResultPage() {
         {showShareModal && interpretation && (
           <ShareModal
             data={{
-              dailySummary: interpretation.dailySummary,
-              love: { score: daily.reading.love.score, keyword: daily.reading.love.keyword },
-              work: { score: daily.reading.work.score, keyword: daily.reading.work.keyword },
-              money: { score: daily.reading.money.score, keyword: daily.reading.money.keyword },
-              luckyHints: interpretation.luckyHints,
+              dailySummary: `${interpretation.coreMood.mode} — ${interpretation.coreMood.summary}`,
+              love: { score: daily.reading.love.score, keyword: interpretation.love.status },
+              work: { score: daily.reading.work.score, keyword: interpretation.work.status },
+              money: { score: daily.reading.money.score, keyword: interpretation.money.status },
+              luckyHints: interpretation.coreMood.keywords,
             } satisfies ShareCardData}
             onClose={() => setShowShareModal(false)}
           />
@@ -534,27 +422,25 @@ export default function ResultPage() {
 }
 
 // ──────────────────────────────────────────
-// 3축 운세 카드 컴포넌트
+// 3축 Energy 카드 컴포넌트
 // ──────────────────────────────────────────
 
-function ReadingCard({
-  axis,
-  emoji,
+function EnergyCard({
+  icon,
+  label,
   score,
-  keyword,
+  status,
+  interpretation,
+  tip,
   engineSummary,
-  aiInterpretation,
-  aiAdvice,
-  aiLoading,
 }: {
-  axis: string;
-  emoji: 'heart' | 'briefcase' | 'coin';
+  icon: 'heart' | 'briefcase' | 'coin';
+  label: string;
   score: number;
-  keyword: string;
+  status?: string;
+  interpretation?: string;
+  tip?: string;
   engineSummary: string;
-  aiInterpretation?: string;
-  aiAdvice?: string;
-  aiLoading: boolean;
 }) {
   const icons = {
     heart: <HeartIcon />,
@@ -562,21 +448,20 @@ function ReadingCard({
     coin: <CoinIcon />,
   };
 
-  // 점수에 따른 바 색상
   const barColor = score >= 7 ? 'bg-green-500' : score >= 4 ? 'bg-yellow-500' : 'bg-red-400';
 
   return (
     <div className="rounded-2xl bg-background border border-border p-5">
-      {/* 카드 헤더: 아이콘 + 축 이름 + 키워드 + 점수 바 */}
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-muted-foreground">{icons[emoji]}</span>
-        <span className="text-sm font-medium text-foreground">{axis}</span>
-        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-auto">
-          {keyword}
-        </span>
+        <span className="text-muted-foreground">{icons[icon]}</span>
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        {status && (
+          <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground ml-auto">
+            {status}
+          </span>
+        )}
       </div>
 
-      {/* 점수 바 */}
       <div className="w-full h-1.5 rounded-full bg-muted mb-3">
         <div
           className={`h-full rounded-full ${barColor} transition-all`}
@@ -584,54 +469,44 @@ function ReadingCard({
         />
       </div>
 
-      {/* 해석 텍스트 (AI 해석 우선, 없으면 로딩 중이면 스켈레톤, 아니면 엔진 요약) */}
-      {aiInterpretation ? (
-        <p className="text-sm text-foreground leading-relaxed">
-          {aiInterpretation}
+      {/* tip이 메인 안내 */}
+      {tip ? (
+        <p className="text-sm font-medium text-foreground">
+          {tip}
         </p>
-      ) : aiLoading ? (
-        <div className="space-y-1.5">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-4/5" />
-        </div>
-      ) : (
-        <p className="text-sm text-foreground leading-relaxed">
-          {engineSummary}
-        </p>
-      )}
-
-      {/* AI 행동 조언 (있으면 표시, 로딩 중이면 스켈레톤) */}
-      {aiAdvice ? (
-        <p className="mt-2 text-xs text-muted-foreground">
-          {aiAdvice}
-        </p>
-      ) : aiLoading ? (
-        <Skeleton className="h-3 w-2/3 mt-2" />
       ) : null}
+
+      {/* interpretation이 서브 해설 */}
+      <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+        {interpretation || engineSummary}
+      </p>
     </div>
   );
 }
 
 // ──────────────────────────────────────────
-// 스켈레톤 로딩 컴포넌트 (AI 해석 로딩 중 표시)
+// 행운 부스터 항목 컴포넌트
 // ──────────────────────────────────────────
 
-function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse bg-muted rounded ${className}`} />;
+function BoosterItem({ title, value }: { title: string; value: string }) {
+  const parts = value.split(/\s*[—\-]\s*/);
+  const main = parts[0];
+  const sub = parts.length > 1 ? parts.slice(1).join(' ') : null;
+
+  return (
+    <div className="flex gap-4">
+      <p className="text-sm text-muted-foreground shrink-0 w-20 whitespace-nowrap">{title}</p>
+      <div className="flex-1">
+        <p className="text-sm font-semibold text-foreground">{main}</p>
+        {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+      </div>
+    </div>
+  );
 }
 
 // ──────────────────────────────────────────
 // 아이콘 컴포넌트들
 // ──────────────────────────────────────────
-
-function LoadingSpinner() {
-  return (
-    <svg className="size-8 animate-spin text-muted-foreground" viewBox="0 0 24 24" fill="none">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
-  );
-}
 
 function HeartIcon() {
   return (
