@@ -13,7 +13,7 @@
 
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import ShareCard, { type ShareCardData } from './ShareCard';
 
@@ -250,61 +250,54 @@ function generateShareImage(data: ShareCardData): Promise<Blob> {
 }
 
 export default function ShareModal({ data, onClose }: ShareModalProps) {
-  const [copySuccess, setCopySuccess] = useState(false);
   const [imageGenerating, setImageGenerating] = useState(false);
 
-  // 모달 열릴 때 body 스크롤 잠금
+  // 모바일 여부 판별 (터치 디바이스 + Web Share API)
+  const isMobile = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const hasShare = typeof navigator.share === 'function';
+    return hasTouch && hasShare;
+  }, []);
+
+  // 모달 열릴 때 body 스크롤 잠금 (가로 + 세로)
   useEffect(() => {
     document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
     };
   }, []);
 
-  // 이미지 저장 핸들러
-  const handleSaveImage = useCallback(async () => {
+  // 결과 공유/저장 핸들러
+  const handleShare = useCallback(async () => {
     setImageGenerating(true);
     try {
       const blob = await generateShareImage(data);
 
-      // Web Share API 지원 시 공유 시도 (모바일)
-      if (navigator.share && navigator.canShare) {
+      if (isMobile) {
+        // 모바일: OS 공유 시트 (카톡, 슬랙 등)
         const file = new File([blob], 'ningning-fortune.png', { type: 'image/png' });
-        const shareData = { files: [file] };
-        if (navigator.canShare(shareData)) {
-          await navigator.share(shareData);
-          return;
-        }
+        await navigator.share({ files: [file] });
+      } else {
+        // PC: 이미지 다운로드
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'ningning-fortune.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       }
-
-      // 미지원 시 다운로드 fallback
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'ningning-fortune.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
     } catch (error) {
-      // 사용자가 공유를 취소한 경우 무시
       if (error instanceof Error && error.name === 'AbortError') return;
-      console.error('이미지 저장 오류:', error);
+      console.error('공유/저장 오류:', error);
     } finally {
       setImageGenerating(false);
     }
-  }, [data]);
-
-  // 링크 복사 핸들러
-  const handleCopyLink = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
-    } catch {
-      console.error('클립보드 복사 실패');
-    }
-  }, []);
+  }, [data, isMobile]);
 
   // 배경 클릭 시 닫기
   const handleBackdropClick = useCallback(
@@ -316,30 +309,22 @@ export default function ShareModal({ data, onClose }: ShareModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-hidden"
       onClick={handleBackdropClick}
     >
-      <div className="flex flex-col items-center gap-4 max-h-[90vh] overflow-y-auto">
+      <div className="flex flex-col items-center gap-4 max-h-[90vh] overflow-y-auto overflow-x-hidden">
         {/* 공유 카드 미리보기 */}
         <ShareCard data={data} />
 
         {/* 액션 버튼들 */}
         <div className="flex flex-col gap-2 w-[360px]">
           <Button
-            onClick={handleSaveImage}
+            onClick={handleShare}
             disabled={imageGenerating}
             className="h-11 w-full rounded-xl text-base font-semibold"
             size="lg"
           >
-            {imageGenerating ? '생성 중...' : '이미지 저장'}
-          </Button>
-
-          <Button
-            onClick={handleCopyLink}
-            variant="secondary"
-            className="h-11 w-full rounded-xl"
-          >
-            {copySuccess ? '복사 완료!' : '링크 복사'}
+            {imageGenerating ? '생성 중...' : isMobile ? '결과 공유' : '결과 저장'}
           </Button>
 
           <Button
