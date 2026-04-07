@@ -279,7 +279,11 @@ export default function ShareModal({ data, onClose }: ShareModalProps) {
       if (isMobile) {
         // 모바일: OS 공유 시트 (카톡, 슬랙 등)
         const file = new File([blob], 'ningning-fortune.png', { type: 'image/png' });
-        await navigator.share({ files: [file] });
+        await navigator.share({
+          files: [file],
+          text: '나도 오늘의 운세 보기 👉',
+          url: window.location.origin,
+        });
       } else {
         // PC: 이미지 다운로드
         const url = URL.createObjectURL(blob);
