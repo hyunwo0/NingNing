@@ -68,7 +68,7 @@ export async function generateResponse(
 
   // Claude API 호출
   const response = await client.messages.create({
-    model: 'claude-sonnet-4-6',              // 사용할 Claude 모델
+    model: 'claude-haiku-4-5-20251001',       // 사용할 Claude 모델
     max_tokens: options?.maxTokens ?? 2048,   // 최대 응답 길이
     temperature: options?.temperature ?? 0.7,  // 창의성 수준 (0.7 = 적당히 다양하게)
     system: systemPrompt,                      // 시스템 프롬프트 (AI의 역할 정의)

@@ -1,25 +1,74 @@
 // ==========================================
-// 메인 랜딩 페이지 (/)
+// 메인 페이지 (/)
 // ==========================================
 //
-// 서비스의 첫 화면입니다.
-// 비회원/회원에 따라 CTA 라벨과 테마 링크 노출이 달라집니다.
+// 다양한 운세 타입 중 하나를 선택해 시작할 수 있는 허브 페이지입니다.
 //
 // [구성]
-// 1) GNB 헤더: 좌측 로고, 우측 로그인/마이페이지
-// 2) 히어로 영역: 서비스 소개 → 특징 소개 → CTA
-// 3) 테마별 랜딩 링크 (회원만)
+// 1) GNB 헤더
+// 2) 타이틀: "오늘, 뭐 볼까?"
+// 3) 타입 선택 카드들
 // 4) 푸터
 
 'use client';
 
 import Link from 'next/link';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { useRouter } from 'next/navigation';
 import AuthNavLink from './AuthNavLink';
 
+// ──────────────────────────────────────────
+// 타입 카드 데이터
+// ──────────────────────────────────────────
+
+const FORTUNE_TYPES = [
+  {
+    id: 'saju',
+    emoji: '🔮',
+    title: '오늘의 운세',
+    description: '사주로 보는 오늘의 흐름',
+    href: '/input',
+    available: true,
+  },
+  {
+    id: 'tarot',
+    emoji: '🃏',
+    title: '타로 한 장',
+    description: '카드가 말해주는 오늘',
+    href: '/tarot',
+    available: true,
+  },
+  {
+    id: 'mbti',
+    emoji: '🧠',
+    title: 'MBTI 운세',
+    description: '내 유형에 맞는 오늘',
+    href: '/mbti',
+    available: true,
+  },
+  {
+    id: 'celeb',
+    emoji: '⭐',
+    title: '나와 맞는 연예인',
+    description: '사주 궁합 TOP 3',
+    href: '/celeb',
+    available: true,
+  },
+  {
+    id: 'face',
+    emoji: '👀',
+    title: 'AI 관상',
+    description: '얼굴로 보는 나의 성격',
+    href: '/face',
+    available: true,
+  },
+] as const;
+
+// ──────────────────────────────────────────
+// 메인 컴포넌트
+// ──────────────────────────────────────────
+
 export default function Home() {
-  const { user, loading } = useAuth();
-  const isLoggedIn = !loading && !!user;
+  const router = useRouter();
 
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
@@ -33,72 +82,45 @@ export default function Home() {
           <AuthNavLink />
         </nav>
 
-        {/* ── 히어로 영역 ── */}
-        <section className="flex flex-col pt-12 pb-12 gap-8">
-          {/* 서비스 소개 */}
-          <div className="text-center space-y-2">
-            <p className="text-lg font-medium text-foreground">
-              사주명리학 기반 AI 오늘의 운세
-            </p>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              정통 사주 계산과 AI 해석으로<br />
-              오늘 하루를 위한 현실적인 가이드를 제공합니다
-            </p>
-          </div>
+        {/* ── 타이틀 ── */}
+        <section className="pt-8 pb-6">
+          <h1 className="text-2xl font-bold text-foreground">
+            오늘, 뭐 볼까?
+          </h1>
+        </section>
 
-          {/* 특징 소개 */}
-          <div className="space-y-6">
-            <FeatureItem
-              icon={<CompassIcon />}
-              title="정통 사주 계산"
-              description="입춘/절기 기준의 정확한 사주 팔자 계산. 만세력 데이터 기반으로 년주, 월주, 일주, 시주를 산출합니다."
-            />
-            <FeatureItem
-              icon={<SparklesIcon />}
-              title="AI 맞춤 해석"
-              description="사주 구조를 근거로 연애, 일, 재물 3가지 축의 오늘 흐름을 현실적인 언어로 풀어드립니다."
-            />
-            <FeatureItem
-              icon={<ShieldIcon />}
-              title="안전한 운세"
-              description="공포 조장이나 확정적 예언 없이, 오늘 실제로 적용할 수 있는 담백한 조언을 제공합니다."
-            />
-          </div>
-
-          {/* 테마별 랜딩 링크 (회원만, CTA 위) */}
-          {isLoggedIn && (
-            <div className="flex flex-col items-center gap-3">
-              <Link
-                href="/landing/love"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                연애운이 궁금하다면? →
-              </Link>
-              <Link
-                href="/landing/career"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                이직을 고민 중이라면? →
-              </Link>
-            </div>
-          )}
-
-          {/* CTA 버튼 */}
-          <div className="flex flex-col items-center gap-3">
-            <Link
-              href="/input"
-              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-foreground px-8 text-base font-semibold text-background transition-colors hover:bg-foreground/90"
+        {/* ── 타입 선택 카드들 ── */}
+        <section className="flex flex-col gap-3 pb-8">
+          {FORTUNE_TYPES.map((type) => (
+            <button
+              key={type.id}
+              onClick={() => type.available && router.push(type.href)}
+              disabled={!type.available}
+              className={`flex items-center gap-4 p-4 rounded-2xl border text-left transition-colors ${
+                type.available
+                  ? 'border-border bg-background hover:bg-muted cursor-pointer'
+                  : 'border-border/50 bg-background/50 cursor-not-allowed opacity-60'
+              }`}
             >
-              {isLoggedIn ? '오늘의 운세 보기' : '무료로 운세 보기'}
-            </Link>
-
-            {/* 보조 문구 (비회원만) */}
-            {!isLoggedIn && (
-              <p className="text-xs text-muted-foreground">
-                회원가입 없이 바로 이용할 수 있습니다
-              </p>
-            )}
-          </div>
+              <span className="text-2xl">{type.emoji}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-foreground">{type.title}</p>
+                  {!type.available && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      준비 중
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{type.description}</p>
+              </div>
+              {type.available && (
+                <svg className="size-4 text-muted-foreground shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m9 18 6-6-6-6" />
+                </svg>
+              )}
+            </button>
+          ))}
         </section>
 
         {/* ── 푸터 ── */}
@@ -113,62 +135,5 @@ export default function Home() {
         </footer>
       </main>
     </div>
-  );
-}
-
-// ──────────────────────────────────────────
-// 하위 컴포넌트
-// ──────────────────────────────────────────
-
-function FeatureItem({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="flex gap-4">
-      <div className="flex-shrink-0 size-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
-        {icon}
-      </div>
-      <div>
-        <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-        <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-// ──────────────────────────────────────────
-// 아이콘
-// ──────────────────────────────────────────
-
-function CompassIcon() {
-  return (
-    <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polygon points="16.24,7.76 14.12,14.12 7.76,16.24 9.88,9.88" />
-    </svg>
-  );
-}
-
-function SparklesIcon() {
-  return (
-    <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-      <path d="M5 3v4" /><path d="M19 17v4" /><path d="M3 5h4" /><path d="M17 19h4" />
-    </svg>
-  );
-}
-
-function ShieldIcon() {
-  return (
-    <svg className="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
   );
 }

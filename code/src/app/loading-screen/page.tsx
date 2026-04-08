@@ -40,6 +40,42 @@ const CONFIGS = {
     ],
     destination: '/report',
   },
+  tarot: {
+    messages: [
+      '카드의 에너지를 읽는 중...',
+      '타로 마스터에게 연결하는 중...',
+      '카드의 메시지를 해석하는 중...',
+      '오늘의 답을 정리하는 중...',
+    ],
+    destination: '/tarot/result',
+  },
+  mbti: {
+    messages: [
+      '당신의 유형을 분석하는 중...',
+      '성격 패턴을 읽는 중...',
+      '오늘의 맞춤 운세를 만드는 중...',
+      'MBTI 마스터에게 연결하는 중...',
+    ],
+    destination: '/mbti/result',
+  },
+  celeb: {
+    messages: [
+      '사주 궁합을 분석하는 중...',
+      '연예인 데이터를 탐색하는 중...',
+      '최고의 매칭을 찾는 중...',
+      '결과를 정리하는 중...',
+    ],
+    destination: '/celeb/result',
+  },
+  face: {
+    messages: [
+      '얼굴의 인상을 읽는 중...',
+      'AI 관상사에게 연결하는 중...',
+      '숨겨진 매력을 찾는 중...',
+      '관상 분석을 정리하는 중...',
+    ],
+    destination: '/face/result',
+  },
 } as const;
 
 type LoadingType = keyof typeof CONFIGS;
@@ -55,6 +91,7 @@ function LoadingScreenContent() {
 
   const [messageIndex, setMessageIndex] = useState(0);
   const [error, setError] = useState('');
+  const [retryable, setRetryable] = useState(true);
 
   const config = type ? CONFIGS[type] : null;
 
@@ -77,13 +114,122 @@ function LoadingScreenContent() {
     setError('');
     const startTime = Date.now();
 
-    const sajuInputRaw = sessionStorage.getItem('sajuInput');
-    if (!sajuInputRaw) {
-      router.replace('/input');
-      return;
-    }
-
     try {
+      if (type === 'tarot') {
+        // 타로 해석
+        const tarotInputRaw = sessionStorage.getItem('tarotInput');
+        if (!tarotInputRaw) {
+          router.replace('/tarot');
+          return;
+        }
+
+        const tarotInput = JSON.parse(tarotInputRaw);
+        const res = await fetch('/api/tarot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tarotInput),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || '타로 해석 실패');
+        }
+
+        const data = await res.json();
+        sessionStorage.setItem('tarotResult', JSON.stringify({
+          card: tarotInput.card,
+          questionType: tarotInput.questionType,
+          ...data.result,
+        }));
+      } else if (type === 'mbti') {
+        // MBTI 운세
+        const mbtiInputRaw = sessionStorage.getItem('mbtiInput');
+        if (!mbtiInputRaw) {
+          router.replace('/mbti');
+          return;
+        }
+
+        const mbtiInput = JSON.parse(mbtiInputRaw);
+        const res = await fetch('/api/mbti', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mbtiInput),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'MBTI 운세 생성 실패');
+        }
+
+        const data = await res.json();
+        sessionStorage.setItem('mbtiResult', JSON.stringify({
+          mbtiType: mbtiInput.mbtiType,
+          ...data.result,
+        }));
+      } else if (type === 'celeb') {
+        // 나와 맞는 연예인
+        const sajuResultRaw = sessionStorage.getItem('sajuResult');
+        const sajuInputRaw = sessionStorage.getItem('sajuInput');
+        if (!sajuResultRaw || !sajuInputRaw) {
+          router.replace('/input');
+          return;
+        }
+
+        const sajuResult = JSON.parse(sajuResultRaw);
+        const sajuInput = JSON.parse(sajuInputRaw);
+        const res = await fetch('/api/celeb', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gender: sajuInput.gender,
+            birthYear: sajuInput.birthYear,
+            birthMonth: sajuInput.birthMonth,
+            birthDay: sajuInput.birthDay,
+            calendarType: sajuInput.calendarType,
+            dayMaster: sajuResult.dayMaster,
+            dayMasterElement: sajuResult.dayMasterElement,
+            fiveElements: sajuResult.fiveElements,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || '연예인 매칭 실패');
+        }
+
+        const data = await res.json();
+        sessionStorage.setItem('celebResult', JSON.stringify(data.result));
+      } else if (type === 'face') {
+        // AI 관상
+        const faceInputRaw = sessionStorage.getItem('faceInput');
+        if (!faceInputRaw) {
+          router.replace('/face');
+          return;
+        }
+
+        const faceInput = JSON.parse(faceInputRaw);
+        const res = await fetch('/api/face', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(faceInput),
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          setRetryable(err.retryable !== false);
+          throw new Error(err.error || '관상 분석 실패');
+        }
+
+        const data = await res.json();
+        sessionStorage.setItem('faceResult', JSON.stringify(data.result));
+      } else {
+
+      const sajuInputRaw = sessionStorage.getItem('sajuInput');
+      if (!sajuInputRaw) {
+        router.replace('/input');
+        return;
+      }
+
       if (type === 'saju') {
         // 1) 사주 계산
         const input = JSON.parse(sajuInputRaw);
@@ -162,6 +308,8 @@ function LoadingScreenContent() {
         sessionStorage.setItem('sajuReport', JSON.stringify(data.report));
       }
 
+      } // else (saju/report) 닫기
+
       // 최소 3초 표시 (API가 빨리 끝나도 문구를 볼 수 있도록)
       const elapsed = Date.now() - startTime;
       const remaining = Math.max(0, 3000 - elapsed);
@@ -191,12 +339,14 @@ function LoadingScreenContent() {
           <p className="text-lg font-medium text-foreground">오류가 발생했습니다</p>
           <p className="text-sm text-muted-foreground">{error}</p>
           <div className="flex gap-2">
-            <button
-              onClick={fetchData}
-              className="h-10 px-6 rounded-xl bg-foreground text-background text-sm font-medium"
-            >
-              다시 시도
-            </button>
+            {retryable ? (
+              <button
+                onClick={fetchData}
+                className="h-10 px-6 rounded-xl bg-foreground text-background text-sm font-medium"
+              >
+                다시 시도
+              </button>
+            ) : null}
             <button
               onClick={() => router.back()}
               className="h-10 px-6 rounded-xl border border-border text-sm font-medium text-foreground"
