@@ -110,7 +110,7 @@ export default function ReportPage() {
 
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
-      <main className="flex flex-col w-full max-w-md px-6 py-8 gap-6">
+      <main className="flex flex-col w-full max-w-md px-6 pb-8 gap-6">
 
         <GNB title="심층 리포트" />
 
