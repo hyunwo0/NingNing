@@ -58,14 +58,14 @@ const CONFIGS = {
     ],
     destination: '/mbti/result',
   },
-  celeb: {
+  compatibility: {
     messages: [
-      '사주 궁합을 분석하는 중...',
-      '연예인 데이터를 탐색하는 중...',
-      '최고의 매칭을 찾는 중...',
+      '두 사람의 에너지를 비교하는 중...',
+      '궁합 포인트를 분석하는 중...',
+      '최적의 관계 패턴을 찾는 중...',
       '결과를 정리하는 중...',
     ],
-    destination: '/celeb/result',
+    destination: '/compatibility/result',
   },
   face: {
     messages: [
@@ -166,39 +166,32 @@ function LoadingScreenContent() {
           mbtiType: mbtiInput.mbtiType,
           ...data.result,
         }));
-      } else if (type === 'celeb') {
-        // 나와 맞는 연예인
-        const sajuResultRaw = sessionStorage.getItem('sajuResult');
-        const sajuInputRaw = sessionStorage.getItem('sajuInput');
-        if (!sajuResultRaw || !sajuInputRaw) {
-          router.replace('/input');
+      } else if (type === 'compatibility') {
+        // 궁합 분석
+        const inputRaw = sessionStorage.getItem('compatibilityInput');
+        if (!inputRaw) {
+          router.replace('/compatibility');
           return;
         }
 
-        const sajuResult = JSON.parse(sajuResultRaw);
-        const sajuInput = JSON.parse(sajuInputRaw);
-        const res = await fetch('/api/celeb', {
+        const input = JSON.parse(inputRaw);
+        const res = await fetch('/api/compatibility', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            gender: sajuInput.gender,
-            birthYear: sajuInput.birthYear,
-            birthMonth: sajuInput.birthMonth,
-            birthDay: sajuInput.birthDay,
-            calendarType: sajuInput.calendarType,
-            dayMaster: sajuResult.dayMaster,
-            dayMasterElement: sajuResult.dayMasterElement,
-            fiveElements: sajuResult.fiveElements,
-          }),
+          body: JSON.stringify(input),
         });
 
         if (!res.ok) {
           const err = await res.json();
-          throw new Error(err.error || '연예인 매칭 실패');
+          throw new Error(err.error || '궁합 분석 실패');
         }
 
         const data = await res.json();
-        sessionStorage.setItem('celebResult', JSON.stringify(data.result));
+        sessionStorage.setItem('compatibilityResult', JSON.stringify({
+          person1Name: input.person1.name,
+          person2Name: input.person2.name,
+          ...data.result,
+        }));
       } else if (type === 'face') {
         // AI 관상
         const faceInputRaw = sessionStorage.getItem('faceInput');

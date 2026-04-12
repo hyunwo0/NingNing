@@ -46,11 +46,11 @@ const FORTUNE_TYPES = [
     available: true,
   },
   {
-    id: 'celeb',
-    emoji: '⭐',
-    title: '나와 맞는 연예인',
-    description: '사주 궁합 TOP 3',
-    href: '/celeb',
+    id: 'compatibility',
+    emoji: '💕',
+    title: '궁합 보기',
+    description: '두 사람의 사주 궁합 분석',
+    href: '/compatibility',
     available: true,
   },
   {
