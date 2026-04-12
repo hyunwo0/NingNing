@@ -249,6 +249,144 @@ function generateShareImage(data: ShareCardData): Promise<Blob> {
   });
 }
 
+// ── AI 배경 이미지 + 텍스트 오버레이로 공유 이미지 생성 ──
+async function generateAIShareImage(data: ShareCardData): Promise<Blob> {
+  // 1) AI 배경 이미지 요청
+  const res = await fetch('/api/result-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      mood: data.dailySummary,
+      keywords: data.luckyHints,
+      strategy: data.love.keyword,
+    }),
+  });
+
+  if (!res.ok) throw new Error('AI 이미지 생성 실패');
+  const { image } = await res.json();
+
+  // 2) 배경 이미지 로드
+  const bgImage = await loadImage(image);
+
+  // 3) Canvas에 배경 + 텍스트 오버레이
+  const canvas = document.createElement('canvas');
+  const W = 720;
+  const H = 720;
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+
+  // 배경 이미지 그리기
+  ctx.drawImage(bgImage, 0, 0, W, H);
+
+  // 하단 그라데이션 오버레이 (텍스트 가독성)
+  const gradient = ctx.createLinearGradient(0, H * 0.4, 0, H);
+  gradient.addColorStop(0, 'rgba(0,0,0,0)');
+  gradient.addColorStop(0.5, 'rgba(0,0,0,0.6)');
+  gradient.addColorStop(1, 'rgba(0,0,0,0.85)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+
+  const PADDING = 40;
+  let y = H * 0.45;
+
+  // 무드명
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.textAlign = 'center';
+  const summaryLines = wrapText(ctx, data.dailySummary, W - PADDING * 2);
+  for (const line of summaryLines) {
+    ctx.fillText(line, W / 2, y);
+    y += 36;
+  }
+
+  y += 20;
+
+  // 3축 점수
+  const axes = [
+    { label: '연애', score: data.love.score, keyword: data.love.keyword },
+    { label: '일', score: data.work.score, keyword: data.work.keyword },
+    { label: '재물', score: data.money.score, keyword: data.money.keyword },
+  ];
+
+  ctx.textAlign = 'left';
+  for (const axis of axes) {
+    ctx.font = '18px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(axis.label, PADDING, y);
+
+    // 점수 바 배경
+    const barX = PADDING + 60;
+    const barW = W - PADDING * 2 - 110;
+    const barH = 10;
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(barX, y - 8, barW, barH, 5);
+      ctx.fill();
+    } else {
+      ctx.fillRect(barX, y - 8, barW, barH);
+    }
+
+    // 점수 바 채우기
+    const fillW = barW * (axis.score / 10);
+    ctx.fillStyle = getBarColor(axis.score);
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(barX, y - 8, fillW, barH, 5);
+      ctx.fill();
+    } else {
+      ctx.fillRect(barX, y - 8, fillW, barH);
+    }
+
+    // 키워드
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(axis.keyword, W - PADDING, y);
+    ctx.textAlign = 'left';
+
+    y += 30;
+  }
+
+  y += 10;
+
+  // 키워드 태그
+  if (data.luckyHints.length > 0) {
+    ctx.textAlign = 'center';
+    ctx.font = '14px sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.fillText(data.luckyHints.join('  ·  '), W / 2, y);
+    y += 30;
+  }
+
+  // 워터마크
+  ctx.textAlign = 'center';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.fillText('NingNing', W / 2, H - 24);
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('이미지 생성 실패'));
+      },
+      'image/png',
+    );
+  });
+}
+
+// ── 이미지 로드 헬퍼 ──
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
 export default function ShareModal({ data, onClose }: ShareModalProps) {
   const [imageGenerating, setImageGenerating] = useState(false);
 
@@ -274,10 +412,19 @@ export default function ShareModal({ data, onClose }: ShareModalProps) {
   const handleShare = useCallback(async () => {
     setImageGenerating(true);
     try {
-      const blob = await generateShareImage(data);
+      let blob: Blob;
+
+      // sessionStorage에 AI 이미지가 있으면 그대로 사용
+      const cachedImage = sessionStorage.getItem('sajuImage');
+      if (cachedImage) {
+        const res = await fetch(cachedImage);
+        blob = await res.blob();
+      } else {
+        // 없으면 기존 Canvas 이미지로 폴백
+        blob = await generateShareImage(data);
+      }
 
       if (isMobile) {
-        // 모바일: OS 공유 시트 (카톡, 슬랙 등)
         const file = new File([blob], 'ningning-fortune.png', { type: 'image/png' });
         await navigator.share({
           files: [file],
@@ -285,7 +432,6 @@ export default function ShareModal({ data, onClose }: ShareModalProps) {
           url: window.location.origin,
         });
       } else {
-        // PC: 이미지 다운로드
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

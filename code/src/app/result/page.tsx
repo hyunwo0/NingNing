@@ -78,6 +78,9 @@ export default function ResultPage() {
   // AI 해석 로딩 중 여부
   const [aiLoading, setAiLoading] = useState(false);
 
+  // AI 생성 이미지
+  const [aiImage, setAiImage] = useState<string | null>(null);
+
   // 공유 모달 표시 여부
   const [showShareModal, setShowShareModal] = useState(false);
 
@@ -147,11 +150,20 @@ export default function ResultPage() {
     const cachedInterpret = sessionStorage.getItem('sajuInterpretation');
     if (cachedInterpret) {
       setInterpretation(JSON.parse(cachedInterpret));
-    } else {
-      setAiError(true);
-    }
 
-    setStep('done');
+      const cachedImage = sessionStorage.getItem('sajuImage');
+      if (cachedImage) {
+        setAiImage(cachedImage);
+      }
+
+      console.log(cachedImage);
+
+      setStep('done');
+    } else {
+      // 해석 데이터가 없으면 에러 화면
+      setErrorMessage('운세 해석을 불러오지 못했어요. 다시 시도해주세요.');
+      setStep('error');
+    }
   }, [router, fetchInterpretation]);
 
   // ── 저장 여부 확인 (오늘 날짜 기준) ──
@@ -209,14 +221,29 @@ export default function ResultPage() {
   // ── 에러 화면 ──
   if (step === 'error') {
     return (
-      <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 dark:bg-black min-h-screen">
-        <div className="flex flex-col items-center gap-4 px-6 text-center">
-          <p className="text-lg font-medium text-foreground">오류가 발생했습니다</p>
-          <p className="text-sm text-muted-foreground">{errorMessage}</p>
-          <Button onClick={() => router.push('/input')} variant="outline">
-            다시 입력하기
-          </Button>
-        </div>
+      <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black min-h-screen">
+        <main className="flex flex-col w-full max-w-md px-6">
+          <GNB title="오늘의 운세" />
+          <div className="flex flex-col items-center gap-6 pt-20 text-center">
+            <div className="size-16 rounded-full bg-muted flex items-center justify-center">
+              <svg className="size-8 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="m15 9-6 6" />
+                <path d="m9 9 6 6" />
+              </svg>
+            </div>
+            <div className="space-y-2">
+              <p className="text-lg font-semibold text-foreground">운세를 불러오지 못했어요</p>
+              <p className="text-sm text-muted-foreground">{errorMessage}</p>
+            </div>
+            <Button
+              onClick={() => router.push('/input')}
+              className="h-12 rounded-xl text-base font-semibold px-8"
+            >
+              다시 해보기
+            </Button>
+          </div>
+        </main>
       </div>
     );
   }
@@ -230,7 +257,14 @@ export default function ResultPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6 pb-8 gap-6">
 
-        <GNB title="오늘의 운세" />
+        <GNB title="오늘의 운세" />        
+
+        {/* ── AI 생성 이미지 ── */}
+        {aiImage && (
+          <section className="rounded-2xl overflow-hidden">
+            <img src={aiImage} alt="오늘의 운세" className="w-full aspect-square object-cover" />
+          </section>
+        )}
 
         {/* ── 저장 버튼 ── */}
         <div className="flex items-center justify-end">
@@ -261,21 +295,6 @@ export default function ResultPage() {
             </button>
           )}
         </div>
-
-        {/* ── AI 해석 실패 시 재시도 배너 ── */}
-        {aiError && !interpretation && (
-          <div className="rounded-xl bg-destructive/10 px-4 py-3 flex items-center justify-between">
-            <p className="text-sm text-destructive">AI 해석을 불러오지 못했습니다</p>
-            <Button
-              onClick={handleRetryInterpret}
-              disabled={aiRetrying}
-              variant="outline"
-              className="text-xs px-3 py-1 h-auto"
-            >
-              {aiRetrying ? '재시도 중...' : '다시 시도'}
-            </Button>
-          </div>
-        )}
 
         {/* ── 오늘의 무드 ── */}
         {interpretation ? (

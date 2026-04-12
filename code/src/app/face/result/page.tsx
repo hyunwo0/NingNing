@@ -21,13 +21,18 @@ export default function FaceResultPage() {
   const router = useRouter();
   const [result, setResult] = useState<FaceResult | null>(null);
 
+  const [aiImage, setAiImage] = useState<string | null>(null);
+
   useEffect(() => {
     const cached = sessionStorage.getItem('faceResult');
     if (cached) {
       setResult(JSON.parse(cached));
     } else {
       router.replace('/face');
+      return;
     }
+    const img = sessionStorage.getItem('faceImage');
+    if (img) setAiImage(img);
   }, [router]);
 
   if (!result) {
@@ -39,6 +44,12 @@ export default function FaceResultPage() {
       <main className="flex flex-col w-full max-w-md px-6 pb-8 gap-6">
 
         <GNB title="관상" />
+
+        {aiImage && (
+          <section className="rounded-2xl overflow-hidden">
+            <img src={aiImage} alt="관상 결과" className="w-full aspect-square object-cover" />
+          </section>
+        )}
 
         {/* 타이틀 */}
         <section className="rounded-2xl bg-foreground text-background p-5 text-center">

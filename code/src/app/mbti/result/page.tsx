@@ -22,13 +22,18 @@ export default function MbtiResultPage() {
   const router = useRouter();
   const [result, setResult] = useState<MbtiResult | null>(null);
 
+  const [aiImage, setAiImage] = useState<string | null>(null);
+
   useEffect(() => {
     const cached = sessionStorage.getItem('mbtiResult');
     if (cached) {
       setResult(JSON.parse(cached));
     } else {
       router.replace('/mbti');
+      return;
     }
+    const img = sessionStorage.getItem('mbtiImage');
+    if (img) setAiImage(img);
   }, [router]);
 
   if (!result) {
@@ -40,6 +45,12 @@ export default function MbtiResultPage() {
       <main className="flex flex-col w-full max-w-md px-6 pb-8 gap-6">
 
         <GNB title="MBTI" />
+
+        {aiImage && (
+          <section className="rounded-2xl overflow-hidden">
+            <img src={aiImage} alt="MBTI 결과" className="w-full aspect-square object-cover" />
+          </section>
+        )}
 
         {/* 타이틀 */}
         <section className="rounded-2xl bg-foreground text-background p-5 text-center">

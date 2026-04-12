@@ -92,6 +92,7 @@ export default function InputPage() {
     sessionStorage.removeItem('sajuInterpretation');
     sessionStorage.removeItem('sajuReport');
     sessionStorage.removeItem('sajuQAHistory');
+    sessionStorage.removeItem('sajuImage');
 
     // 로딩 페이지로 이동 (API 호출은 로딩 페이지에서 수행)
     router.push('/loading-screen?type=saju');

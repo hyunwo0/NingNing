@@ -92,6 +92,7 @@ function LoadingScreenContent() {
   const [messageIndex, setMessageIndex] = useState(0);
   const [error, setError] = useState('');
   const [retryable, setRetryable] = useState(true);
+  const [fetching, setFetching] = useState(false);
 
   const config = type ? CONFIGS[type] : null;
 
@@ -107,24 +108,54 @@ function LoadingScreenContent() {
 
   // API 호출
   const fetchData = useCallback(async () => {
+    // 결과 이미지 생성 헬퍼 (실패해도 무시)
+    const generateResultImage = async (prompt: string, storageKey: string) => {
+      try {
+        const res = await fetch('/api/result-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          try {
+            sessionStorage.setItem(storageKey, data.image);
+          } catch {
+            // sessionStorage 용량 초과 시 다른 이미지 캐시를 지우고 재시도
+            ['sajuImage', 'tarotImage', 'mbtiImage', 'compatibilityImage', 'faceImage'].forEach(k => {
+              if (k !== storageKey) sessionStorage.removeItem(k);
+            });
+            try {
+              sessionStorage.setItem(storageKey, data.image);
+            } catch {
+              // 그래도 안 되면 무시
+            }
+          }
+        }
+      } catch {
+        // 이미지 생성 실패 시 무시
+      }
+    };
     if (!type || !config) {
       router.replace('/input');
       return;
     }
 
+    if (fetching) return;
+    setFetching(true);
     setError('');
 
-    // 이미 결과가 캐시에 있으면 바로 목적지로 (뒤로가기로 돌아온 경우)
-    const cacheKeys: Record<string, string> = {
-      saju: 'sajuResult',
-      tarot: 'tarotResult',
-      mbti: 'mbtiResult',
-      compatibility: 'compatibilityResult',
-      face: 'faceResult',
-      report: 'sajuReport',
+    // 이미 결과 + 이미지가 캐시에 있으면 바로 목적지로 (뒤로가기로 돌아온 경우)
+    const cacheCheck: Record<string, { result: string; image: string }> = {
+      saju: { result: 'sajuInterpretation', image: 'sajuImage' },
+      tarot: { result: 'tarotResult', image: 'tarotImage' },
+      mbti: { result: 'mbtiResult', image: 'mbtiImage' },
+      compatibility: { result: 'compatibilityResult', image: 'compatibilityImage' },
+      face: { result: 'faceResult', image: 'faceImage' },
+      report: { result: 'sajuReport', image: 'sajuReport' },
     };
-    const cacheKey = type ? cacheKeys[type] : null;
-    if (cacheKey && sessionStorage.getItem(cacheKey)) {
+    const check = type ? cacheCheck[type] : null;
+    if (check && sessionStorage.getItem(check.result) && sessionStorage.getItem(check.image)) {
       router.replace(config.destination);
       return;
     }
@@ -158,6 +189,11 @@ function LoadingScreenContent() {
           questionType: tarotInput.questionType,
           ...data.result,
         }));
+
+        await generateResultImage(
+          `A person receiving tarot guidance: "${data.result.advice || ''}". Card: ${tarotInput.card.nameKo}. The scene represents the card's meaning.`,
+          'tarotImage',
+        );
       } else if (type === 'mbti') {
         // MBTI 운세
         const mbtiInputRaw = sessionStorage.getItem('mbtiInput');
@@ -183,6 +219,11 @@ function LoadingScreenContent() {
           mbtiType: mbtiInput.mbtiType,
           ...data.result,
         }));
+
+        await generateResultImage(
+          `A ${mbtiInput.mbtiType} person doing their typical activity: "${data.result.advice || data.result.title || ''}". Show their personality through the activity.`,
+          'mbtiImage',
+        );
       } else if (type === 'compatibility') {
         // 궁합 분석
         const inputRaw = sessionStorage.getItem('compatibilityInput');
@@ -209,6 +250,11 @@ function LoadingScreenContent() {
           person2Name: input.person2.name,
           ...data.result,
         }));
+
+        await generateResultImage(
+          `Two people together with great chemistry: "${data.result.summary || ''}". Show two people (seen from behind) enjoying time together, representing their compatibility.`,
+          'compatibilityImage',
+        );
       } else if (type === 'face') {
         // AI 관상
         const faceInputRaw = sessionStorage.getItem('faceInput');
@@ -232,6 +278,11 @@ function LoadingScreenContent() {
 
         const data = await res.json();
         sessionStorage.setItem('faceResult', JSON.stringify(data.result));
+
+        await generateResultImage(
+          `A person enjoying their daily life: "${data.result.oneLiner || data.result.title || ''}". Show them doing a hobby or activity that suits their personality.`,
+          'faceImage',
+        );
       } else {
 
       const sajuInputRaw = sessionStorage.getItem('sajuInput');
@@ -257,30 +308,39 @@ function LoadingScreenContent() {
         const sajuData = await sajuRes.json();
         sessionStorage.setItem('sajuResult', JSON.stringify(sajuData));
 
-        // 2) AI 해석 (실패해도 사주 결과는 있으므로 진행)
-        try {
-          const interpretRes = await fetch('/api/interpret', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              analysis: {
-                fourPillars: sajuData.fourPillars,
-                fiveElements: sajuData.fiveElements,
-                dayMaster: sajuData.dayMaster,
-                dayMasterElement: sajuData.dayMasterElement,
-                dayMasterStrength: sajuData.dayMasterStrength,
-              },
-              daily: sajuData.daily,
-              gender: input.gender,
-            }),
-          });
-
-          if (interpretRes.ok) {
-            const interpretData = await interpretRes.json();
-            sessionStorage.setItem('sajuInterpretation', JSON.stringify(interpretData.interpretation));
+        // 2) AI 해석 + 이미지 생성 (병렬, 실패해도 진행)
+        const interpretPromise = fetch('/api/interpret', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            analysis: {
+              fourPillars: sajuData.fourPillars,
+              fiveElements: sajuData.fiveElements,
+              dayMaster: sajuData.dayMaster,
+              dayMasterElement: sajuData.dayMasterElement,
+              dayMasterStrength: sajuData.dayMasterStrength,
+            },
+            daily: sajuData.daily,
+            gender: input.gender,
+          }),
+        }).then(async (res) => {
+          if (res.ok) {
+            const data = await res.json();
+            sessionStorage.setItem('sajuInterpretation', JSON.stringify(data.interpretation));
+            return data.interpretation;
           }
-        } catch {
-          // AI 해석 실패 시 무시 — /result에서 재시도 가능
+          return null;
+        }).catch(() => null);
+
+        // 이미지는 해석 결과가 필요하므로 해석 완료 후 호출
+        const interpretation = await interpretPromise;
+
+        if (interpretation) {
+          const strategy = interpretation.strategy?.korean || interpretation.coreMood?.mode || '';
+          await generateResultImage(
+            `A person embodying today's fortune advice: "${strategy}". The person is doing an activity that represents this guidance.`,
+            'sajuImage',
+          );
         }
       } else if (type === 'report') {
         // 심층 리포트
@@ -330,7 +390,9 @@ function LoadingScreenContent() {
       router.push(config.destination);
     } catch (err) {
       setError(err instanceof Error ? err.message : '오류가 발생했습니다');
+      setFetching(false);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [type, config, router]);
 
   // 마운트 시 API 호출

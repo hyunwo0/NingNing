@@ -25,13 +25,18 @@ export default function CompatibilityResultPage() {
   const router = useRouter();
   const [result, setResult] = useState<CompatibilityResult | null>(null);
 
+  const [aiImage, setAiImage] = useState<string | null>(null);
+
   useEffect(() => {
     const cached = sessionStorage.getItem('compatibilityResult');
     if (cached) {
       setResult(JSON.parse(cached));
     } else {
       router.replace('/compatibility');
+      return;
     }
+    const img = sessionStorage.getItem('compatibilityImage');
+    if (img) setAiImage(img);
   }, [router]);
 
   if (!result) {
@@ -43,6 +48,12 @@ export default function CompatibilityResultPage() {
       <main className="flex flex-col w-full max-w-md px-6 pb-8 gap-6">
 
         <GNB title="궁합" />
+
+        {aiImage && (
+          <section className="rounded-2xl overflow-hidden">
+            <img src={aiImage} alt="궁합 결과" className="w-full aspect-square object-cover" />
+          </section>
+        )}
 
         {/* 궁합 타이틀 */}
         <section className="rounded-2xl bg-foreground text-background p-5 text-center">

@@ -22,13 +22,18 @@ export default function TarotResultPage() {
   const router = useRouter();
   const [result, setResult] = useState<TarotResult | null>(null);
 
+  const [aiImage, setAiImage] = useState<string | null>(null);
+
   useEffect(() => {
     const cached = sessionStorage.getItem('tarotResult');
     if (cached) {
       setResult(JSON.parse(cached));
     } else {
       router.replace('/tarot');
+      return;
     }
+    const img = sessionStorage.getItem('tarotImage');
+    if (img) setAiImage(img);
   }, [router]);
 
   if (!result) {
@@ -42,6 +47,12 @@ export default function TarotResultPage() {
       <main className="flex flex-col w-full max-w-md px-6 pb-8 gap-6">
 
         <GNB title="타로" />
+
+        {aiImage && (
+          <section className="rounded-2xl overflow-hidden">
+            <img src={aiImage} alt="타로 결과" className="w-full aspect-square object-cover" />
+          </section>
+        )}
 
         {/* ── 선택한 카드 ── */}
         <section className="rounded-2xl bg-foreground text-background p-5 text-center">
