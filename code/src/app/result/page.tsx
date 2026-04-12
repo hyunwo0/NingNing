@@ -22,8 +22,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import GNB from '@/components/layout/GNB';
 import ShareModal from '@/components/share/ShareModal';
 import type { ShareCardData } from '@/components/share/ShareCard';
 import type { DailyRelation } from '@/lib/saju/types';
@@ -230,12 +230,10 @@ export default function ResultPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6 py-8 gap-6">
 
-        {/* ── 헤더 영역: 홈으로 링크 + 저장 버튼 ── */}
-        <div className="flex items-center justify-between">
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            홈으로
-          </Link>
+        <GNB />
 
+        {/* ── 저장 버튼 ── */}
+        <div className="flex items-center justify-end">
           {/* 결과 저장 버튼 (AI 해석 완료 시만 표시) */}
           {interpretation && (
             <button

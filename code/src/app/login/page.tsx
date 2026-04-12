@@ -18,6 +18,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseBrowserClient } from '@/lib/auth/supabase';
+import GNB from '@/components/layout/GNB';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -83,12 +84,7 @@ export default function LoginPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black min-h-screen">
       <main className="flex flex-col w-full max-w-md px-6 py-8 gap-6">
 
-        {/* ── 뒤로가기 링크 ── */}
-        <div className="flex items-center">
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            ← 홈으로
-          </Link>
-        </div>
+        <GNB />
 
         {/* ── 설명 문구 ── */}
         <div className="flex flex-col items-center text-center pt-8 pb-4">

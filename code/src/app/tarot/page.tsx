@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { getRandomCards, type TarotCard } from '@/lib/tarot/cards';
-import AuthNavLink from '../AuthNavLink';
+import GNB from '@/components/layout/GNB';
 
 const QUESTION_TYPES = [
   { id: 'love', label: '연애', description: '사랑과 관계' },
@@ -48,12 +48,7 @@ export default function TarotPage() {
       <main className="flex flex-col w-full max-w-md px-6">
 
         {/* ── GNB 헤더 ── */}
-        <nav className="flex items-center justify-between py-4">
-          <Link href="/" className="text-base font-bold text-foreground">
-            NingNing
-          </Link>
-          <AuthNavLink />
-        </nav>
+        <GNB />
 
         <div className="flex flex-col gap-8 py-8">
           {/* ── 타이틀 ── */}

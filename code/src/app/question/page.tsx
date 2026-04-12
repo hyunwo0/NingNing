@@ -19,6 +19,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import GNB from '@/components/layout/GNB';
 
 // ──────────────────────────────────────────
 // 상수
@@ -188,19 +189,10 @@ export default function QuestionPage() {
 
   return (
     <div className="flex flex-col h-screen bg-zinc-50 dark:bg-black">
-      {/* ── 헤더 ── */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-background">
-        <button
-          onClick={() => router.back()}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <BackIcon />
-        </button>
-        <h1 className="text-sm font-semibold text-foreground">AI 추가질문</h1>
-        <span className="text-xs text-muted-foreground">
-          {isLimitReached ? '무료 소진' : `${remainingFree}회 남음`}
-        </span>
-      </header>
+      {/* ── GNB ── */}
+      <div className="px-4 border-b border-border bg-background">
+        <GNB />
+      </div>
 
       {/* ── 대화 영역 ── */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
@@ -306,23 +298,28 @@ export default function QuestionPage() {
             </div>
           ) : (
             // 질문 입력
-            <div className="flex gap-2">
-              <textarea
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="궁금한 점을 물어보세요..."
-                rows={1}
-                disabled={isLoading}
-                className="flex-1 resize-none rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/50 focus:outline-none disabled:opacity-50"
-              />
-              <Button
-                onClick={handleSubmit}
-                disabled={!inputText.trim() || isLoading}
-                className="rounded-xl px-4 self-end"
-              >
-                <SendIcon />
-              </Button>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <textarea
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="궁금한 점을 물어보세요..."
+                  rows={1}
+                  disabled={isLoading}
+                  className="flex-1 resize-none rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/50 focus:outline-none disabled:opacity-50"
+                />
+                <Button
+                  onClick={handleSubmit}
+                  disabled={!inputText.trim() || isLoading}
+                  className="rounded-xl px-4 self-end"
+                >
+                  <SendIcon />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                무료 질문 {remainingFree}회 남음
+              </p>
             </div>
           )}
         </div>

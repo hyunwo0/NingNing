@@ -6,8 +6,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import GNB from '@/components/layout/GNB';
 
 interface FaceResult {
   title: string;
@@ -38,11 +38,7 @@ export default function FaceResultPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6 py-8 gap-6">
 
-        <div className="flex items-center">
-          <Link href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-            홈으로
-          </Link>
-        </div>
+        <GNB />
 
         {/* 타이틀 */}
         <section className="rounded-2xl bg-foreground text-background p-5 text-center">

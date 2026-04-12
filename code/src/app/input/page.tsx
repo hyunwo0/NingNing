@@ -18,6 +18,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { TWELVE_HOURS } from '@/lib/saju/types';
+import GNB from '@/components/layout/GNB';
 
 // ──────────────────────────────────────────
 // 상수 정의
@@ -99,7 +100,8 @@ export default function InputPage() {
   // ── 입력 폼 ──
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
-      <main className="flex flex-col w-full max-w-md px-6 py-10 gap-8">
+      <main className="flex flex-col w-full max-w-md px-6 gap-8">
+        <GNB />
         {/* 페이지 헤더 */}
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground">

@@ -24,6 +24,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import GNB from '@/components/layout/GNB';
 
 // ──────────────────────────────────────────
 // 타입 정의
@@ -111,11 +112,7 @@ export default function ReportPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6 py-8 gap-6">
 
-        {/* ── 페이지 제목 ── */}
-        <div className="flex items-center gap-2">
-          <ReportIcon />
-          <h1 className="text-lg font-bold text-foreground">심층 리포트</h1>
-        </div>
+        <GNB />
 
         {/* ── 섹션 1: 사주 개요 ── */}
         <section className="rounded-2xl bg-background border border-border p-5">

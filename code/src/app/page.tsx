@@ -15,7 +15,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import AuthNavLink from './AuthNavLink';
+import GNB from '@/components/layout/GNB';
 
 // ──────────────────────────────────────────
 // 타입 카드 데이터
@@ -106,13 +106,7 @@ export default function Home() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6">
 
-        {/* ── GNB 헤더 ── */}
-        <nav className="flex items-center justify-between py-4">
-          <Link href="/" className="text-base font-bold text-foreground">
-            NingNing
-          </Link>
-          <AuthNavLink />
-        </nav>
+        <GNB isHome />
 
         {/* ── 타이틀 ── */}
         <section className="pt-8 pb-6">

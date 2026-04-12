@@ -6,9 +6,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import AuthNavLink from '../AuthNavLink';
+import GNB from '@/components/layout/GNB';
 
 const YEARS = Array.from({ length: 71 }, (_, i) => 2010 - i);
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -54,10 +53,7 @@ export default function CompatibilityPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black min-h-screen">
       <main className="flex flex-col w-full max-w-md px-6">
 
-        <nav className="flex items-center justify-between py-4">
-          <Link href="/" className="text-base font-bold text-foreground">NingNing</Link>
-          <AuthNavLink />
-        </nav>
+        <GNB />
 
         <div className="flex flex-col gap-6 py-8">
           <div>
