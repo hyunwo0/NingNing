@@ -191,7 +191,7 @@ export default function QuestionPage() {
     <div className="flex flex-col h-screen bg-zinc-50 dark:bg-black">
       {/* ── GNB ── */}
       <div className="px-4 border-b border-border bg-background">
-        <GNB />
+        <GNB title="AI 추가질문" />
       </div>
 
       {/* ── 대화 영역 ── */}

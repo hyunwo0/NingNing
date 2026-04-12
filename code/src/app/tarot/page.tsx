@@ -48,7 +48,7 @@ export default function TarotPage() {
       <main className="flex flex-col w-full max-w-md px-6">
 
         {/* ── GNB 헤더 ── */}
-        <GNB />
+        <GNB title="타로" />
 
         <div className="flex flex-col gap-8 py-8">
           {/* ── 타이틀 ── */}

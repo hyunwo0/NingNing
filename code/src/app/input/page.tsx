@@ -101,7 +101,7 @@ export default function InputPage() {
   return (
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6 gap-8">
-        <GNB />
+        <GNB title="오늘의 운세" />
         {/* 페이지 헤더 */}
         <div className="text-center">
           <h1 className="text-2xl font-bold text-foreground">

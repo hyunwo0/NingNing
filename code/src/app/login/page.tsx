@@ -84,7 +84,7 @@ export default function LoginPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black min-h-screen">
       <main className="flex flex-col w-full max-w-md px-6 py-8 gap-6">
 
-        <GNB />
+        <GNB title="로그인" />
 
         {/* ── 설명 문구 ── */}
         <div className="flex flex-col items-center text-center pt-8 pb-4">

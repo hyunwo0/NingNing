@@ -112,6 +112,22 @@ function LoadingScreenContent() {
     }
 
     setError('');
+
+    // 이미 결과가 캐시에 있으면 바로 목적지로 (뒤로가기로 돌아온 경우)
+    const cacheKeys: Record<string, string> = {
+      saju: 'sajuResult',
+      tarot: 'tarotResult',
+      mbti: 'mbtiResult',
+      compatibility: 'compatibilityResult',
+      face: 'faceResult',
+      report: 'sajuReport',
+    };
+    const cacheKey = type ? cacheKeys[type] : null;
+    if (cacheKey && sessionStorage.getItem(cacheKey)) {
+      router.replace(config.destination);
+      return;
+    }
+
     const startTime = Date.now();
 
     try {
@@ -310,7 +326,7 @@ function LoadingScreenContent() {
         await new Promise(resolve => setTimeout(resolve, remaining));
       }
 
-      router.replace(config.destination);
+      router.push(config.destination);
     } catch (err) {
       setError(err instanceof Error ? err.message : '오류가 발생했습니다');
     }

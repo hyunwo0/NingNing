@@ -175,7 +175,7 @@ export default function SignupPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black min-h-screen">
       <main className="flex flex-col w-full max-w-md px-6 py-8 gap-6">
 
-        <GNB />
+        <GNB title="회원가입" />
 
         {/* ── 이메일 입력 + 코드 발송 ── */}
         <section className="space-y-2">

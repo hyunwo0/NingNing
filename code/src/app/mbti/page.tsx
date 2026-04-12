@@ -31,7 +31,7 @@ export default function MbtiPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black min-h-screen">
       <main className="flex flex-col w-full max-w-md px-6">
 
-        <GNB />
+        <GNB title="MBTI" />
 
         <div className="flex flex-col gap-8 py-8">
           <div>

@@ -41,7 +41,7 @@ export default function TarotResultPage() {
     <div className="flex flex-col flex-1 items-center bg-zinc-50 dark:bg-black">
       <main className="flex flex-col w-full max-w-md px-6 py-8 gap-6">
 
-        <GNB />
+        <GNB title="타로" />
 
         {/* ── 선택한 카드 ── */}
         <section className="rounded-2xl bg-foreground text-background p-5 text-center">
