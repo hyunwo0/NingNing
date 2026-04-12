@@ -44,6 +44,7 @@ export interface CompatibilityShareContent {
   person1Name: string;
   person2Name: string;
   totalScore: number;
+  summary: string;
   love: number;
   friendship: number;
   work: number;
@@ -51,6 +52,7 @@ export interface CompatibilityShareContent {
 
 export interface FaceShareContent {
   type: 'face';
+  title: string;
   firstImpression: string;
   personality: string;
   charm: string;
@@ -73,7 +75,6 @@ function formatKoreanDate(): string {
 
 const ShareCard = forwardRef<HTMLDivElement, { data: ShareCardData }>(  
   function ShareCard({ data }, ref) {
-    console.log('sharecard', data);
     return (
       <div
         ref={ref}
@@ -180,25 +181,31 @@ function MbtiContent({ content }: { content: MbtiShareContent }) {
 }
 
 function CompatibilityContent({ content }: { content: CompatibilityShareContent }) {
+  const axes = [
+    { label: '연애', score: content.love },
+    { label: '친구', score: content.friendship },
+    { label: '일', score: content.work },
+  ];
+  const barColor = (score: number) => score >= 80 ? 'bg-green-500' : score >= 60 ? 'bg-yellow-500' : 'bg-red-400';
   return (
     <div className="space-y-3">
       <div className="text-center">
         <p className="text-sm font-semibold">{content.person1Name} ♥ {content.person2Name}</p>
         <p className="text-2xl font-bold mt-1">{content.totalScore}<span className="text-sm text-zinc-400">점</span></p>
+        <p className="text-xs text-zinc-400 mt-1">{content.summary}</p>
       </div>
-      <div className="flex justify-center gap-4 text-xs">
-        <div className="text-center">
-          <p className="text-zinc-400">연애</p>
-          <p className="font-semibold">{content.love}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-zinc-400">친구</p>
-          <p className="font-semibold">{content.friendship}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-zinc-400">일</p>
-          <p className="font-semibold">{content.work}</p>
-        </div>
+      <div className="space-y-2">
+        {axes.map(axis => (
+          <div key={axis.label} className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-zinc-400">{axis.label}</span>
+              <span className="text-zinc-500">{axis.score}점</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-zinc-700">
+              <div className={`h-full rounded-full ${barColor(axis.score)}`} style={{ width: `${axis.score}%` }} />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -207,6 +214,7 @@ function CompatibilityContent({ content }: { content: CompatibilityShareContent 
 function FaceContent({ content }: { content: FaceShareContent }) {
   return (
     <div className="space-y-2 text-xs">
+      <p className="text-sm font-semibold text-center text-white mb-2">{content.title}</p>
       <div>
         <p className="text-zinc-400">첫인상</p>
         <p className="text-zinc-200">{firstSentence(content.firstImpression)}</p>

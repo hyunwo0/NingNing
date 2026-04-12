@@ -156,8 +156,6 @@ export default function ResultPage() {
         setAiImage(cachedImage);
       }
 
-      console.log(cachedImage);
-
       setStep('done');
     } else {
       // 해석 데이터가 없으면 에러 화면

@@ -117,7 +117,7 @@ export default function CompatibilityResultPage() {
               content: {
                 type: 'compatibility',
                 person1Name: result.person1Name, person2Name: result.person2Name,
-                totalScore: result.totalScore,
+                totalScore: result.totalScore, summary: result.summary,
                 love: result.love.score, friendship: result.friendship.score, work: result.work.score,
               },
             } satisfies ShareCardData}

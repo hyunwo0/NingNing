@@ -119,6 +119,7 @@ export default function FaceResultPage() {
               type: 'face', typeLabel: '관상', image: aiImage,
               content: {
                 type: 'face',
+                title: result.title,
                 firstImpression: result.firstImpression,
                 personality: result.personality,
                 charm: result.charm,
