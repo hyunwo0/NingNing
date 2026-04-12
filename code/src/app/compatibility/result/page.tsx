@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import GNB from '@/components/layout/GNB';
+import ShareModal from '@/components/share/ShareModal';
+import type { ShareCardData } from '@/components/share/ShareCard';
 
 interface CompatibilityResult {
   person1Name: string;
@@ -26,6 +28,7 @@ export default function CompatibilityResultPage() {
   const [result, setResult] = useState<CompatibilityResult | null>(null);
 
   const [aiImage, setAiImage] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     const cached = sessionStorage.getItem('compatibilityResult');
@@ -92,6 +95,13 @@ export default function CompatibilityResultPage() {
             다른 궁합 보기
           </Button>
           <Button
+            onClick={() => setShowShareModal(true)}
+            variant="outline"
+            className="h-11 w-full rounded-xl"
+          >
+            공유하기
+          </Button>
+          <Button
             onClick={() => router.push('/')}
             variant="outline"
             className="h-11 w-full rounded-xl"
@@ -99,6 +109,22 @@ export default function CompatibilityResultPage() {
             홈으로
           </Button>
         </div>
+
+        {showShareModal && (
+          <ShareModal
+            data={{
+              type: 'compatibility', typeLabel: '궁합', image: aiImage,
+              content: {
+                type: 'compatibility',
+                person1Name: result.person1Name, person2Name: result.person2Name,
+                totalScore: result.totalScore,
+                love: result.love.score, friendship: result.friendship.score, work: result.work.score,
+              },
+            } satisfies ShareCardData}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
+
       </main>
     </div>
   );

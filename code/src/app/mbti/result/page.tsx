@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import GNB from '@/components/layout/GNB';
+import ShareModal from '@/components/share/ShareModal';
+import type { ShareCardData } from '@/components/share/ShareCard';
 
 interface MbtiResult {
   mbtiType: string;
@@ -23,6 +25,7 @@ export default function MbtiResultPage() {
   const [result, setResult] = useState<MbtiResult | null>(null);
 
   const [aiImage, setAiImage] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     const cached = sessionStorage.getItem('mbtiResult');
@@ -95,6 +98,13 @@ export default function MbtiResultPage() {
             다시 선택하기
           </Button>
           <Button
+            onClick={() => setShowShareModal(true)}
+            variant="outline"
+            className="h-11 w-full rounded-xl"
+          >
+            공유하기
+          </Button>
+          <Button
             onClick={() => router.push('/')}
             variant="outline"
             className="h-11 w-full rounded-xl"
@@ -102,6 +112,13 @@ export default function MbtiResultPage() {
             홈으로
           </Button>
         </div>
+
+        {showShareModal && (
+          <ShareModal
+            data={{ type: 'mbti', typeLabel: 'MBTI', image: aiImage, content: { type: 'mbti', mbtiType: result.mbtiType, title: result.title } } satisfies ShareCardData}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
 
       </main>
     </div>

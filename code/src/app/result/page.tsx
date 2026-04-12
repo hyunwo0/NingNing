@@ -424,12 +424,17 @@ export default function ResultPage() {
         {showShareModal && interpretation && (
           <ShareModal
             data={{
-              dailySummary: `${interpretation.coreMood.mode} — ${interpretation.coreMood.summary}`,
-              love: { score: daily.reading.love.score, keyword: interpretation.love.status },
-              work: { score: daily.reading.work.score, keyword: interpretation.work.status },
-              money: { score: daily.reading.money.score, keyword: interpretation.money.status },
-              luckyHints: interpretation.coreMood.keywords,
-            } satisfies ShareCardData}
+              type: 'saju',
+              typeLabel: '오늘의 운세',
+              image: aiImage,
+              content: {
+                type: 'saju',
+                strategy: interpretation.strategy.korean,
+                love: { status: interpretation.love.status, score: daily.reading.love.score },
+                work: { status: interpretation.work.status, score: daily.reading.work.score },
+                money: { status: interpretation.money.status, score: daily.reading.money.score },
+              },
+            }}
             onClose={() => setShowShareModal(false)}
           />
         )}

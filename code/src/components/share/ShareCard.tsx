@@ -1,115 +1,102 @@
 // ==========================================
-// 공유용 카드 컴포넌트 (ShareCard)
+// 범용 공유 카드 컴포넌트 (ShareCard)
 // ==========================================
 //
-// [역할]
-// 운세 결과를 시각적으로 정리한 카드 UI를 렌더링합니다.
-// ShareModal에서 미리보기용으로 사용되며,
-// Canvas API로 이미지를 생성할 때 데이터를 전달하는 역할도 합니다.
+// 모든 운세 타입(사주/타로/MBTI/궁합/관상)의
+// 공유 카드를 하나의 컴포넌트로 처리합니다.
 
 'use client';
 
 import { forwardRef } from 'react';
 
-// ── 공유 카드에 필요한 데이터 타입 ──
+// ── 공통 공유 데이터 ──
 export interface ShareCardData {
-  dailySummary: string;
-  love: { score: number; keyword: string };
-  work: { score: number; keyword: string };
-  money: { score: number; keyword: string };
-  luckyHints: string[];
+  type: 'saju' | 'tarot' | 'mbti' | 'compatibility' | 'face';
+  typeLabel: string;        // "오늘의 운세", "타로", "MBTI", "궁합", "관상"
+  image?: string | null;    // AI 생성 이미지 (base64)
+  content: SajuShareContent | TarotShareContent | MbtiShareContent | CompatibilityShareContent | FaceShareContent;
 }
 
-interface ShareCardProps {
-  data: ShareCardData;
+export interface SajuShareContent {
+  type: 'saju';
+  strategy: string;
+  love: { status: string; score: number };
+  work: { status: string; score: number };
+  money: { status: string; score: number };
 }
 
-// 오늘 날짜를 한국어 형식으로 포맷
+export interface TarotShareContent {
+  type: 'tarot';
+  questionType: string;
+  cardName: string;
+  keywords: string[];
+  advice: string;
+}
+
+export interface MbtiShareContent {
+  type: 'mbti';
+  mbtiType: string;
+  title: string;
+}
+
+export interface CompatibilityShareContent {
+  type: 'compatibility';
+  person1Name: string;
+  person2Name: string;
+  totalScore: number;
+  love: number;
+  friendship: number;
+  work: number;
+}
+
+export interface FaceShareContent {
+  type: 'face';
+  firstImpression: string;
+  personality: string;
+  charm: string;
+}
+
+// 첫 문장만 추출
+function firstSentence(text: string): string {
+  const idx = text.indexOf('.');
+  return idx >= 0 ? text.slice(0, idx + 1) : text;
+}
+
 function formatKoreanDate(): string {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
   const day = now.getDate();
   const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
-  const weekday = weekdays[now.getDay()];
-  return `${year}년 ${month}월 ${day}일 (${weekday})`;
+  return `${year}년 ${month}월 ${day}일 (${weekdays[now.getDay()]})`;
 }
 
-// 점수에 따른 바 색상 클래스
-function getBarColorClass(score: number): string {
-  if (score >= 7) return 'bg-green-500';
-  if (score >= 4) return 'bg-yellow-500';
-  return 'bg-red-400';
-}
-
-const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
+const ShareCard = forwardRef<HTMLDivElement, { data: ShareCardData }>(  
   function ShareCard({ data }, ref) {
-    const axes = [
-      { label: '연애', emoji: '💕', score: data.love.score, keyword: data.love.keyword },
-      { label: '일/직장', emoji: '💼', score: data.work.score, keyword: data.work.keyword },
-      { label: '재물', emoji: '💰', score: data.money.score, keyword: data.money.keyword },
-    ];
-
+    console.log('sharecard', data);
     return (
       <div
         ref={ref}
-        className="w-[360px] bg-zinc-900 text-white rounded-2xl p-6 flex flex-col gap-5"
+        className="w-[360px] bg-zinc-900 text-white rounded-2xl overflow-hidden flex flex-col"
       >
-        {/* 상단: 로고 + 날짜 */}
-        <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">NingNing</h1>
-          <p className="text-xs text-zinc-400 mt-1">{formatKoreanDate()}</p>
-        </div>
-
-        {/* 한 줄 총평 */}
-        <div className="bg-zinc-800 rounded-xl p-4">
-          <p className="text-base font-semibold leading-relaxed">
-            {data.dailySummary}
-          </p>
-        </div>
-
-        {/* 3축 키워드 + 점수 바 */}
-        <div className="flex flex-col gap-3">
-          {axes.map((axis) => (
-            <div key={axis.label} className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
-                  {axis.emoji} {axis.label}
-                </span>
-                <span className="text-xs text-zinc-400 px-2 py-0.5 rounded-full bg-zinc-800">
-                  {axis.keyword}
-                </span>
-              </div>
-              <div className="w-full h-2 rounded-full bg-zinc-700">
-                <div
-                  className={`h-full rounded-full ${getBarColorClass(axis.score)} transition-all`}
-                  style={{ width: `${axis.score * 10}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* 행운 단서 */}
-        {data.luckyHints.length > 0 && (
-          <div>
-            <p className="text-xs text-zinc-400 mb-2">행운 단서</p>
-            <div className="flex flex-wrap gap-1.5">
-              {data.luckyHints.map((hint) => (
-                <span
-                  key={hint}
-                  className="text-xs px-2.5 py-1 rounded-full bg-zinc-800 text-zinc-200"
-                >
-                  {hint}
-                </span>
-              ))}
-            </div>
-          </div>
+        {/* AI 이미지 */}
+        {data.image && (
+          <img src={data.image} alt="" className="w-full aspect-square object-cover" />
         )}
 
-        {/* 하단 워터마크 */}
-        <div className="text-center pt-2 border-t border-zinc-700">
-          <p className="text-[10px] text-zinc-500">NingNing AI 운세</p>
+        <div className="p-5 flex flex-col gap-4">
+          {/* 타입 + 날짜 */}
+          <div className="text-center">
+            <p className="text-xs text-zinc-400">{data.typeLabel}</p>            
+          </div>
+
+          {/* 타입별 콘텐츠 */}
+          <ShareContent content={data.content} />
+
+          {/* 워터마크 */}
+          <div className="text-center pt-2 border-t border-zinc-700">
+            <p className="text-[10px] text-zinc-500">NingNing</p>
+          </div>
         </div>
       </div>
     );
@@ -117,3 +104,121 @@ const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
 );
 
 export default ShareCard;
+
+// ──────────────────────────────────────────
+// 타입별 콘텐츠 렌더링
+// ──────────────────────────────────────────
+
+function ShareContent({ content }: { content: ShareCardData['content'] }) {
+  switch (content.type) {
+    case 'saju':
+      return <SajuContent content={content} />;
+    case 'tarot':
+      return <TarotContent content={content} />;
+    case 'mbti':
+      return <MbtiContent content={content} />;
+    case 'compatibility':
+      return <CompatibilityContent content={content} />;
+    case 'face':
+      return <FaceContent content={content} />;
+  }
+}
+
+function SajuContent({ content }: { content: SajuShareContent }) {
+  const axes = [
+    { label: '연애', status: content.love.status, score: content.love.score },
+    { label: '일/직장', status: content.work.status, score: content.work.score },
+    { label: '재물', status: content.money.status, score: content.money.score },
+  ];
+  const barColor = (score: number) => score >= 7 ? 'bg-green-500' : score >= 4 ? 'bg-yellow-500' : 'bg-red-400';
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-semibold text-center">{content.strategy}</p>
+      <div className="space-y-2.5">
+        {axes.map(axis => (
+          <div key={axis.label} className="space-y-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-zinc-400">{axis.label}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-zinc-500">{axis.score}/10</span>
+                <span className="px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 text-[10px]">{axis.status}</span>
+              </div>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-zinc-700">
+              <div className={`h-full rounded-full ${barColor(axis.score)}`} style={{ width: `${axis.score * 10}%` }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TarotContent({ content }: { content: TarotShareContent }) {
+  const typeLabels: Record<string, string> = { love: '연애', career: '진로', today: '오늘' };
+  return (
+    <div className="text-center space-y-2">
+      <p className="text-xs text-zinc-400">{typeLabels[content.questionType] || content.questionType} 타로</p>
+      <p className="text-lg font-bold">{content.cardName}</p>
+      <div className="flex justify-center gap-2">
+        {content.keywords.map(kw => (
+          <span key={kw} className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300">{kw}</span>
+        ))}
+      </div>
+      <p className="text-sm text-white mt-3">{content.advice}</p>
+    </div>
+  );
+}
+
+function MbtiContent({ content }: { content: MbtiShareContent }) {
+  return (
+    <div className="text-center space-y-2">
+      <p className="text-3xl font-bold">{content.mbtiType}</p>
+      <p className="text-sm text-zinc-300">{content.title}</p>
+    </div>
+  );
+}
+
+function CompatibilityContent({ content }: { content: CompatibilityShareContent }) {
+  return (
+    <div className="space-y-3">
+      <div className="text-center">
+        <p className="text-sm font-semibold">{content.person1Name} ♥ {content.person2Name}</p>
+        <p className="text-2xl font-bold mt-1">{content.totalScore}<span className="text-sm text-zinc-400">점</span></p>
+      </div>
+      <div className="flex justify-center gap-4 text-xs">
+        <div className="text-center">
+          <p className="text-zinc-400">연애</p>
+          <p className="font-semibold">{content.love}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-zinc-400">친구</p>
+          <p className="font-semibold">{content.friendship}</p>
+        </div>
+        <div className="text-center">
+          <p className="text-zinc-400">일</p>
+          <p className="font-semibold">{content.work}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FaceContent({ content }: { content: FaceShareContent }) {
+  return (
+    <div className="space-y-2 text-xs">
+      <div>
+        <p className="text-zinc-400">첫인상</p>
+        <p className="text-zinc-200">{firstSentence(content.firstImpression)}</p>
+      </div>
+      <div>
+        <p className="text-zinc-400">성격</p>
+        <p className="text-zinc-200">{firstSentence(content.personality)}</p>
+      </div>
+      <div>
+        <p className="text-zinc-400">매력</p>
+        <p className="text-zinc-200">{firstSentence(content.charm)}</p>
+      </div>
+    </div>
+  );
+}

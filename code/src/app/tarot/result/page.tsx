@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import GNB from '@/components/layout/GNB';
+import ShareModal from '@/components/share/ShareModal';
+import type { ShareCardData } from '@/components/share/ShareCard';
 
 interface TarotResult {
   card: { name: string; nameKo: string; keywords: string[] };
@@ -23,6 +25,7 @@ export default function TarotResultPage() {
   const [result, setResult] = useState<TarotResult | null>(null);
 
   const [aiImage, setAiImage] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     const cached = sessionStorage.getItem('tarotResult');
@@ -106,6 +109,13 @@ export default function TarotResultPage() {
             다시 뽑기
           </Button>
           <Button
+            onClick={() => setShowShareModal(true)}
+            variant="outline"
+            className="h-11 w-full rounded-xl"
+          >
+            공유하기
+          </Button>
+          <Button
             onClick={() => router.push('/')}
             variant="outline"
             className="h-11 w-full rounded-xl"
@@ -113,6 +123,24 @@ export default function TarotResultPage() {
             홈으로
           </Button>
         </div>
+
+        {showShareModal && (
+          <ShareModal
+            data={{
+              type: 'tarot',
+              typeLabel: '타로',
+              image: aiImage,
+              content: {
+                type: 'tarot',
+                questionType: result.questionType,
+                cardName: result.card.nameKo,
+                keywords: result.card.keywords,
+                advice: result.advice,
+              },
+            } satisfies ShareCardData}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
 
       </main>
     </div>

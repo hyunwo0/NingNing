@@ -8,6 +8,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import GNB from '@/components/layout/GNB';
+import ShareModal from '@/components/share/ShareModal';
+import type { ShareCardData } from '@/components/share/ShareCard';
 
 interface FaceResult {
   title: string;
@@ -22,6 +24,7 @@ export default function FaceResultPage() {
   const [result, setResult] = useState<FaceResult | null>(null);
 
   const [aiImage, setAiImage] = useState<string | null>(null);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   useEffect(() => {
     const cached = sessionStorage.getItem('faceResult');
@@ -95,6 +98,13 @@ export default function FaceResultPage() {
             다시 분석하기
           </Button>
           <Button
+            onClick={() => setShowShareModal(true)}
+            variant="outline"
+            className="h-11 w-full rounded-xl"
+          >
+            공유하기
+          </Button>
+          <Button
             onClick={() => router.push('/')}
             variant="outline"
             className="h-11 w-full rounded-xl"
@@ -102,6 +112,21 @@ export default function FaceResultPage() {
             홈으로
           </Button>
         </div>
+
+        {showShareModal && (
+          <ShareModal
+            data={{
+              type: 'face', typeLabel: '관상', image: aiImage,
+              content: {
+                type: 'face',
+                firstImpression: result.firstImpression,
+                personality: result.personality,
+                charm: result.charm,
+              },
+            } satisfies ShareCardData}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
 
       </main>
     </div>
