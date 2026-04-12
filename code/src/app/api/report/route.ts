@@ -26,22 +26,21 @@ interface ReportRequest {
   gender: 'male' | 'female';
 }
 
-// Claude가 반환할 심층 리포트 JSON 구조
+// Claude가 반환할 심층 리포트 JSON 구조 (v3 K-콘텐츠 톤)
 interface ReportResult {
-  sajuOverview: {
-    dayMasterExplanation: string;
-    fiveElementAnalysis: string;
-    personalityInsight: string;
+  myProfile: {
+    title: string;
+    description: string;
   };
-  todayDetailed: {
-    overallFlow: string;
-    loveDetailed: string;
-    workDetailed: string;
-    moneyDetailed: string;
+  todayDeep: {
+    overall: string;
+    love: string;
+    work: string;
+    money: string;
   };
-  actionAdvice: string[];
-  weeklyPreview: string;
-  closingMessage: string;
+  actions: string[];
+  weekFlow: string;
+  closing: string;
 }
 
 export async function POST(request: Request) {

@@ -22,57 +22,57 @@ import { useRouter, useSearchParams } from 'next/navigation';
 const CONFIGS = {
   saju: {
     messages: [
-      '사주 팔자를 펼치는 중...',
-      '오행의 균형을 살피는 중...',
-      '오늘의 기운을 읽는 중...',
-      'AI 도사에게 연락하는 중...',
-      '운세를 정리하는 중...',
+      '당신의 사주를 펼치는 중...',
+      '에너지 밸런스를 체크하는 중...',
+      '오늘의 바이브를 캐치하는 중...',
+      'AI가 운세를 읽는 중...',
+      '거의 다 됐어요!',
     ],
     destination: '/result',
   },
   report: {
     messages: [
-      '사주 원국을 깊이 분석하는 중...',
-      '오행의 상생상극을 풀어보는 중...',
-      '올해의 대운 흐름을 살피는 중...',
-      '맞춤 행동 조언을 준비하는 중...',
-      '심층 리포트를 정리하는 중...',
+      '사주를 깊이 들여다보는 중...',
+      '에너지 흐름을 분석하는 중...',
+      '맞춤 전략을 짜는 중...',
+      '리포트를 마무리하는 중...',
+      '거의 다 됐어요!',
     ],
     destination: '/report',
   },
   tarot: {
     messages: [
       '카드의 에너지를 읽는 중...',
-      '타로 마스터에게 연결하는 중...',
-      '카드의 메시지를 해석하는 중...',
-      '오늘의 답을 정리하는 중...',
+      '타로 마스터가 해석하는 중...',
+      '메시지를 정리하는 중...',
+      '거의 다 됐어요!',
     ],
     destination: '/tarot/result',
   },
   mbti: {
     messages: [
       '당신의 유형을 분석하는 중...',
-      '성격 패턴을 읽는 중...',
       '오늘의 맞춤 운세를 만드는 중...',
-      'MBTI 마스터에게 연결하는 중...',
+      '결과를 정리하는 중...',
+      '거의 다 됐어요!',
     ],
     destination: '/mbti/result',
   },
   compatibility: {
     messages: [
       '두 사람의 에너지를 비교하는 중...',
-      '궁합 포인트를 분석하는 중...',
-      '최적의 관계 패턴을 찾는 중...',
+      '궁합 포인트를 찾는 중...',
       '결과를 정리하는 중...',
+      '거의 다 됐어요!',
     ],
     destination: '/compatibility/result',
   },
   face: {
     messages: [
       '얼굴의 인상을 읽는 중...',
-      'AI 관상사에게 연결하는 중...',
-      '숨겨진 매력을 찾는 중...',
-      '관상 분석을 정리하는 중...',
+      'AI가 매력을 분석하는 중...',
+      '결과를 정리하는 중...',
+      '거의 다 됐어요!',
     ],
     destination: '/face/result',
   },
@@ -98,8 +98,9 @@ function LoadingScreenContent() {
   // 문구 순환 (2초 간격)
   useEffect(() => {
     if (!config) return;
+    const lastIndex = config.messages.length - 1;
     const interval = setInterval(() => {
-      setMessageIndex(prev => (prev + 1) % config.messages.length);
+      setMessageIndex(prev => prev < lastIndex ? prev + 1 : prev);
     }, 2000);
     return () => clearInterval(interval);
   }, [config]);

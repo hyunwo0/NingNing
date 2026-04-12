@@ -30,22 +30,21 @@ import GNB from '@/components/layout/GNB';
 // 타입 정의
 // ──────────────────────────────────────────
 
-// 심층 리포트 응답 구조 (API에서 반환하는 형태)
+// 심층 리포트 응답 구조 (v3 K-콘텐츠 톤)
 interface ReportData {
-  sajuOverview: {
-    dayMasterExplanation: string;   // 일간에 대한 쉬운 설명
-    fiveElementAnalysis: string;    // 오행 분포 해석
-    personalityInsight: string;     // 성격/성향 해석
+  myProfile: {
+    title: string;
+    description: string;
   };
-  todayDetailed: {
-    overallFlow: string;    // 오늘의 전체 흐름
-    loveDetailed: string;   // 연애운 상세 해석
-    workDetailed: string;   // 직장/일운 상세 해석
-    moneyDetailed: string;  // 재물운 상세 해석
+  todayDeep: {
+    overall: string;
+    love: string;
+    work: string;
+    money: string;
   };
-  actionAdvice: string[];    // 구체적 행동 조언 3가지
-  weeklyPreview: string;     // 이번 주 흐름 미리보기
-  closingMessage: string;    // 마무리 한마디
+  actions: string[];
+  weekFlow: string;
+  closing: string;
 }
 
 // 로딩 상태
@@ -114,121 +113,58 @@ export default function ReportPage() {
 
         <GNB title="심층 리포트" />
 
-        {/* ── 섹션 1: 사주 개요 ── */}
-        <section className="rounded-2xl bg-background border border-border p-5">
-          <h2 className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-            <CompassIcon />
-            사주 개요
-          </h2>
-          <div className="space-y-4">
-            {/* 일간 설명 */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-1">나의 일간</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {report.sajuOverview.dayMasterExplanation}
-              </p>
-            </div>
-            {/* 오행 분석 */}
-            <div className="border-t border-border pt-4">
-              <h3 className="text-sm font-semibold text-foreground mb-1">오행 분석</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {report.sajuOverview.fiveElementAnalysis}
-              </p>
-            </div>
-            {/* 성격/성향 해석 */}
-            <div className="border-t border-border pt-4">
-              <h3 className="text-sm font-semibold text-foreground mb-1">성격과 성향</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {report.sajuOverview.personalityInsight}
-              </p>
-            </div>
+        {/* ── 나의 프로필 ── */}
+        <section className="rounded-2xl bg-foreground text-background p-5">
+          <p className="text-xs text-background/60 mb-1">나의 에너지 프로필</p>
+          <p className="text-xl font-bold">{report.myProfile.title}</p>
+          <p className="text-sm text-background/80 mt-2 leading-relaxed">{report.myProfile.description}</p>
+        </section>
+
+        {/* ── 오늘의 상세 해석 ── */}
+        <section className="rounded-2xl bg-background border border-border p-5 space-y-4">
+          <h2 className="text-xs font-medium text-muted-foreground">오늘의 상세 해석</h2>
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-1">전체 흐름</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{report.todayDeep.overall}</p>
+          </div>
+          <div className="border-t border-border pt-4">
+            <h3 className="text-sm font-semibold text-foreground mb-1">연애</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{report.todayDeep.love}</p>
+          </div>
+          <div className="border-t border-border pt-4">
+            <h3 className="text-sm font-semibold text-foreground mb-1">일/직장</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{report.todayDeep.work}</p>
+          </div>
+          <div className="border-t border-border pt-4">
+            <h3 className="text-sm font-semibold text-foreground mb-1">재물</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">{report.todayDeep.money}</p>
           </div>
         </section>
 
-        {/* ── 섹션 2: 오늘의 상세 해석 ── */}
+        {/* ── 행동 조언 ── */}
         <section className="rounded-2xl bg-background border border-border p-5">
-          <h2 className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-            <CalendarIcon />
-            오늘의 상세 해석
-          </h2>
-          <div className="space-y-4">
-            {/* 전체 흐름 */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-1">전체 흐름</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {report.todayDetailed.overallFlow}
-              </p>
-            </div>
-            {/* 연애운 상세 */}
-            <div className="border-t border-border pt-4">
-              <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5">
-                <HeartIcon />
-                연애운
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {report.todayDetailed.loveDetailed}
-              </p>
-            </div>
-            {/* 직장/일운 상세 */}
-            <div className="border-t border-border pt-4">
-              <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5">
-                <BriefcaseIcon />
-                직장/일운
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {report.todayDetailed.workDetailed}
-              </p>
-            </div>
-            {/* 재물운 상세 */}
-            <div className="border-t border-border pt-4">
-              <h3 className="text-sm font-semibold text-foreground mb-1 flex items-center gap-1.5">
-                <CoinIcon />
-                재물운
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {report.todayDetailed.moneyDetailed}
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ── 섹션 3: 구체적 행동 조언 3가지 ── */}
-        <section className="rounded-2xl bg-background border border-border p-5">
-          <h2 className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-            <LightbulbIcon />
-            구체적 행동 조언
-          </h2>
+          <h2 className="text-xs font-medium text-muted-foreground mb-3">오늘의 행동 조언</h2>
           <div className="space-y-3">
-            {report.actionAdvice.map((advice, index) => (
+            {report.actions.map((action, index) => (
               <div key={index} className="flex gap-3">
-                {/* 번호 뱃지 */}
                 <span className="flex-shrink-0 flex items-center justify-center size-6 rounded-full bg-foreground text-background text-xs font-bold">
                   {index + 1}
                 </span>
-                <p className="text-sm text-foreground leading-relaxed pt-0.5">
-                  {advice}
-                </p>
+                <p className="text-sm text-foreground leading-relaxed pt-0.5">{action}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── 섹션 4: 이번 주 흐름 ── */}
+        {/* ── 이번 주 흐름 ── */}
         <section className="rounded-2xl bg-background border border-border p-5">
-          <h2 className="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
-            <TrendIcon />
-            이번 주 흐름
-          </h2>
-          <p className="text-sm text-foreground leading-relaxed">
-            {report.weeklyPreview}
-          </p>
+          <h2 className="text-xs font-medium text-muted-foreground mb-2">이번 주 흐름</h2>
+          <p className="text-sm text-foreground leading-relaxed">{report.weekFlow}</p>
         </section>
 
-        {/* ── 섹션 5: 마무리 메시지 ── */}
-        <section className="rounded-2xl bg-foreground text-background p-5">
-          <p className="text-sm leading-relaxed font-medium">
-            {report.closingMessage}
-          </p>
+        {/* ── 마무리 ── */}
+        <section className="rounded-2xl bg-foreground text-background p-5 text-center">
+          <p className="text-sm leading-relaxed font-medium">{report.closing}</p>
         </section>
 
         {/* ── 하단 버튼 ── */}
